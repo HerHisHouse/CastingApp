@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CastingInfo — Gestión de Carrera",
+  title: "CastingApp — Gestiona Castings y trabajos",
   description: "Plataforma personal para actores. Gestiona tus castings, proyectos, finanzas y contactos.",
 };
 

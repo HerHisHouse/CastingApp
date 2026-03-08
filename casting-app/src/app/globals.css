@@ -930,13 +930,107 @@ tbody tr:last-child td {
   transition: width 0.5s ease;
 }
 
+/* Mobile Nav Elements */
+.mobile-nav-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-primary);
+  padding: 8px;
+  margin-right: 8px;
+}
+
+.mobile-close-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 4px;
+}
+
+.mobile-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 40;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   :root {
-    --sidebar-width: 200px;
+    --sidebar-width: 260px;
   }
 
-  .page-header,
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: calc(var(--sidebar-width) * -1);
+    height: 100vh;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+  }
+
+  .sidebar.open {
+    transform: translateX(100%);
+  }
+
+  .mobile-nav-btn {
+    display: flex;
+    position: fixed;
+    top: 14px;
+    left: 12px;
+    z-index: 30;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  .mobile-close-btn {
+    display: block;
+  }
+
+  .mobile-overlay {
+    display: block;
+  }
+
+  .app-layout {
+    flex-direction: column;
+  }
+
+  .main-content {
+    padding-top: 60px;
+    /* Space for fixed mobile header button */
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  /* Ensure button stretches in header */
+  .page-header>div:last-child {
+    width: 100%;
+  }
+
+  .page-header .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 12px;
+  }
+
   .topbar,
   .page-body {
     padding-left: 16px;
@@ -948,7 +1042,15 @@ tbody tr:last-child td {
     grid-template-columns: 1fr;
   }
 
-  .stat-grid {
-    grid-template-columns: 1fr 1fr;
+  .stat-grid,
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  /* Tables horizontally scrollable */
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: calc(100vw - 32px);
   }
 }
