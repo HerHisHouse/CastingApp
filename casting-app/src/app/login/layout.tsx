@@ -2,16 +2,15 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
-import Sidebar from '@/components/Sidebar'
 import { Loader2 } from 'lucide-react'
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
     const { user, loading } = useAuth()
     const router = useRouter()
 
     useEffect(() => {
-        if (!loading && !user) {
-            router.replace('/login')
+        if (!loading && user) {
+            router.replace('/')
         }
     }, [user, loading, router])
 
@@ -20,15 +19,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Loader2 size={28} color="var(--accent-light)" className="spin" />
         </div>
     )
+    if (user) return null
 
-    if (!user) return null
-
-    return (
-        <div className="app-layout">
-            <Sidebar />
-            <main className="main-content">
-                {children}
-            </main>
-        </div>
-    )
+    return <>{children}</>
 }

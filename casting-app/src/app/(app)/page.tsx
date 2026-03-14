@@ -9,6 +9,7 @@ import {
     LineChart, Line, PieChart, Pie, Cell
 } from 'recharts'
 import { Film, Clapperboard, DollarSign, TrendingUp, PhoneCall, Trophy, Star } from 'lucide-react'
+import DashboardCalendar from '@/components/DashboardCalendar'
 
 const COLORS = ['#7c6af7', '#34d399', '#fbbf24', '#f87171', '#60a5fa']
 
@@ -165,6 +166,11 @@ export default function DashboardPage() {
                         color="#fbbf24"
                         sub="cobrado"
                     />
+                </div>
+
+                {/* Calendario */}
+                <div className="mb-6">
+                    <DashboardCalendar />
                 </div>
 
                 {/* Charts row */}

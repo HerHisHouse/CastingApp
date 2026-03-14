@@ -4,7 +4,7 @@ import Modal from '@/components/Modal'
 import { Finanza, TipoIngreso, EstadoPago } from '@/lib/supabase'
 import { Save, Euro, Info } from 'lucide-react'
 
-type FinanzaForm = Omit<Finanza, 'id' | 'created_at'>
+type FinanzaForm = Omit<Finanza, 'id' | 'created_at' | 'user_id'>
 
 // Calcula fecha + 90 días en formato YYYY-MM-DD
 function add90Days(dateStr: string): string {

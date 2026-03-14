@@ -48,9 +48,11 @@ export default function FinanzasPage() {
         return { total, cobrado, pendiente, netoCobrado }
     }, [data])
 
-    const handleSave = async (form: Omit<Finanza, 'id' | 'created_at'>) => {
+    const handleSave = async (form: Omit<Finanza, 'id' | 'created_at' | 'user_id'>) => {
         if (editing) await update(editing.id, form)
         else await create(form)
+        setModalOpen(false)
+        setEditing(null)
     }
 
     const openEdit = (f: Finanza) => { setEditing(f); setModalOpen(true) }
@@ -165,7 +167,18 @@ export default function FinanzasPage() {
                                                 <td style={{ whiteSpace: 'nowrap', opacity: f.fecha_limite_cobro ? 1 : 0.4 }}>
                                                     {f.fecha_limite_cobro ? (
                                                         <span style={{
-                                                            color: f.estado_pago !== 'pagado' && new Date(f.fecha_limite_cobro) < new Date() ? 'var(--danger)' : 'inherit'
+                                                            fontWeight: 600,
+                                                            color: (() => {
+                                                                if (f.estado_pago === 'pagado') return 'inherit'
+                                                                const deadline = new Date(f.fecha_limite_cobro + 'T23:59:59')
+                                                                const now = new Date()
+                                                                const diffDays = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+
+                                                                if (diffDays <= 0) return 'var(--danger)'
+                                                                if (diffDays <= 3) return '#f97316' // Naranja
+                                                                if (diffDays <= 10) return '#fbbf24' // Amarillo
+                                                                return 'var(--success)'
+                                                            })()
                                                         }}>
                                                             {formatDate(f.fecha_limite_cobro)}
                                                         </span>

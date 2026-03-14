@@ -71,7 +71,7 @@ export default function ProyectosPage() {
                 || (p.director?.toLowerCase().includes(q) ?? false)
         }), [data, search])
 
-    const handleSave = async (form: Omit<Proyecto, 'id' | 'created_at'>, forceFinanzas: boolean = false) => {
+    const handleSave = async (form: Omit<Proyecto, 'id' | 'created_at' | 'user_id'>, forceFinanzas: boolean = false) => {
         let savedId: string
 
         if (editing) {

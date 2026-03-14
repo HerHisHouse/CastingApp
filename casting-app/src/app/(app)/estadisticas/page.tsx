@@ -2,13 +2,14 @@
 import { useMemo } from 'react'
 import { useCastings } from '@/hooks/useData'
 import { formatCurrency } from '@/components/ui'
+import { useAuth } from '@/context/AuthContext'
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend
 } from 'recharts'
 import { BarChart3, Target, TrendingUp, Users } from 'lucide-react'
 
-const COLORS = ['#7c6af7', '#34d399', '#fbbf24', '#f87171', '#60a5fa', '#a78bfa']
+const COLORS = ['#7c6af7', '#34d399', '#f97316', '#f87171', '#60a5fa', '#a78bfa']
 
 const customTooltipStyle = {
     background: '#16161f',
@@ -36,6 +37,7 @@ function RatioCard({ label, value, sub, color }: { label: string, value: string,
 
 export default function EstadisticasPage() {
     const { data: castings } = useCastings()
+    const { genero } = useAuth()
 
 
     // Datos del funnel de progresión
@@ -147,7 +149,7 @@ export default function EstadisticasPage() {
         <>
             <div className="page-header">
                 <h2>Estadísticas</h2>
-                <p>Análisis detallado de tu rendimiento como actor</p>
+                <p>Análisis detallado de tu rendimiento como {genero}</p>
             </div>
 
             <div className="page-body">
@@ -162,7 +164,7 @@ export default function EstadisticasPage() {
                         <div style={{ display: 'flex', alignItems: 'stretch', gap: '3px' }}>
                             {[
                                 { label: 'Enviados', count: funnelData.total, color: '#7c6af7', pct: 100 },
-                                { label: 'Opcionados', count: funnelData.opcionados, color: '#a78bfa', pct: funnelData.total ? (funnelData.opcionados / funnelData.total * 100) : 0 },
+                                { label: 'Opcionados', count: funnelData.opcionados, color: '#f97316', pct: funnelData.total ? (funnelData.opcionados / funnelData.total * 100) : 0 },
                                 { label: 'Con Callback', count: funnelData.conCallback, color: '#fbbf24', pct: funnelData.total ? (funnelData.conCallback / funnelData.total * 100) : 0 },
                                 { label: 'Seleccionados', count: funnelData.seleccionados, color: '#34d399', pct: funnelData.total ? (funnelData.seleccionados / funnelData.total * 100) : 0 },
                             ].map(({ label, count, color, pct }, i) => (
@@ -205,7 +207,7 @@ export default function EstadisticasPage() {
                         label="Casting → Opcionado"
                         value={ratioOpcionado}
                         sub={`${funnelData.opcionados} opcionados de ${castings.length} castings`}
-                        color="#a78bfa"
+                        color="#f97316"
                     />
                     <RatioCard
                         label="Opcionado → Callback"
@@ -233,7 +235,7 @@ export default function EstadisticasPage() {
                             <Tooltip contentStyle={customTooltipStyle} />
                             <Legend wrapperStyle={{ fontSize: '11px', color: '#8888aa' }} />
                             <Line type="monotone" dataKey="castings" stroke="#7c6af7" strokeWidth={2} dot={false} name="Castings" />
-                            <Line type="monotone" dataKey="opcionados" stroke="#a78bfa" strokeWidth={2} dot={false} name="Opcionados" />
+                            <Line type="monotone" dataKey="opcionados" stroke="#f97316" strokeWidth={2} dot={false} name="Opcionados" />
                             <Line type="monotone" dataKey="trabajos" stroke="#34d399" strokeWidth={2} dot={false} name="Trabajos" />
                         </LineChart>
                     </ResponsiveContainer>
@@ -308,7 +310,7 @@ export default function EstadisticasPage() {
                                 <Tooltip contentStyle={customTooltipStyle} />
                                 <Legend wrapperStyle={{ fontSize: '11px', color: '#8888aa' }} />
                                 <Bar dataKey="total" name="Total Castings" fill="#7c6af7" radius={[3, 3, 0, 0]} />
-                                <Bar dataKey="opcionados" name="Opcionados" fill="#a78bfa" radius={[3, 3, 0, 0]} />
+                                <Bar dataKey="opcionados" name="Opcionados" fill="#f97316" radius={[3, 3, 0, 0]} />
                                 <Bar dataKey="trabajos" name="Trabajos" fill="#34d399" radius={[3, 3, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>

@@ -7,7 +7,7 @@ import { useProyectos } from '@/hooks/useData'
 import AutocompleteInput from '@/components/AutocompleteInput'
 import { Save, Calculator, Euro, Briefcase, CalendarDays, Mic, Info } from 'lucide-react'
 
-type ProyectoForm = Omit<Proyecto, 'id' | 'created_at'>
+type ProyectoForm = Omit<Proyecto, 'id' | 'created_at' | 'user_id'>
 
 const TIPOS_RODAJE: TipoProyecto[] = ['serie', 'cine', 'publicidad', 'teatro', 'tv']
 

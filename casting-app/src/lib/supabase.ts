@@ -27,6 +27,11 @@ export type Database = {
         Row: Contacto
         Insert: Omit<Contacto, 'id' | 'created_at'>
         Update: Partial<Omit<Contacto, 'id' | 'created_at'>>
+      },
+      calendar_events: {
+        Row: CalendarEvent
+        Insert: Omit<CalendarEvent, 'id' | 'created_at'>
+        Update: Partial<Omit<CalendarEvent, 'id' | 'created_at'>>
       }
     }
   }
@@ -34,11 +39,17 @@ export type Database = {
 
 export type TipoProyecto = 'serie' | 'cine' | 'publicidad' | 'teatro' | 'doblaje' | 'tv' | 'evento'
 export type TipoCasting = 'self_tape' | 'presencial' | 'callback_presencial' | 'callback_zoom'
-export type EstadoCasting = 'enviado' | 'callback' | 'opcionado' | 'seleccionado' | 'descartado'
+export type EstadoCasting = 'pendiente' | 'enviado' | 'callback' | 'opcionado' | 'seleccionado' | 'descartado'
 export type FuenteCasting = 'representante' | 'director_casting' | 'autocasting' | 'contacto' | 'agencia'
 export type TipoIngreso = 'nomina' | 'derechos_imagen' | 'buyout' | 'royalties' | 'callback'
 export type EstadoPago = 'pendiente' | 'pagado' | 'parcial'
 export type TipoContacto = 'director_casting' | 'representante' | 'productor' | 'director'
+export type EventType = 'casting_deadline' | 'opcionado_ppm' | 'callback' | 'wardrobe_fitting' | 'shooting_day' | 'finance_due'
+
+export interface RolEconomico {
+  tarifa_bruta: number | null
+  buyout: number | null
+}
 
 export interface Casting {
   id: string
@@ -49,24 +60,55 @@ export interface Casting {
   director_casting: string | null
   productora: string | null
   plataforma_cliente: string | null
-  fecha_casting: string
+  fecha_casting: string          // ahora = fecha máx. de entrega
   tipo_casting: TipoCasting
   estado: EstadoCasting
-  // ── Milestones de progresión (acumulativos, no se borran) ──
+  // ── Milestones de progresión (acumulativos) ──
   fue_opcionado: boolean
   tuvo_callback: boolean
   tipo_callback: 'presencial' | 'zoom' | null
-  // ──────────────────────────────────────────────────────────
-  resultado_final: string | null
-  actor_seleccionado: string | null
-  enlace_self_tape: string | null
-  enlace_guion: string | null
+  // ─────────────────────────────────────────────
   notas: string | null
   fuente_casting: FuenteCasting
   nombre_agencia: string | null
-  // ── Callback cobrable (si hay callback pero no te seleccionan) ──
+  // ── Callback cobrable ──────────────────────
   cobra_callback: boolean
   tarifa_callback: number | null
+  // ── Nuevos campos ──────────────────────────
+  localizacion: string | null
+  fechas_rodaje: string | null
+  prueba_vestuario_fecha: string | null
+  callback_fecha: string | null
+  callback_salario: number | null
+  ppm_fecha: string | null        // PPM (fecha de elección de elenco)
+  travel_fecha: string | null     // Fecha de viaje
+  // ── Economía multi-rol (publicidad) ────────
+  roles_seleccionados: string | null   // JSON array: ['ocp','secundario','fe']
+  // OCP
+  ocp_tarifa_bruta: number | null
+  ocp_buyout: number | null
+  // Secundario
+  sec_tarifa_bruta: number | null
+  sec_buyout: number | null
+  // FE (Feature Extra)
+  fe_tarifa_bruta: number | null
+  fe_buyout: number | null
+  // Rol por el que fue seleccionado (para pasar al proyecto)
+  rol_seleccionado: string | null
+  // ── Datos económicos generales (no publicidad) ──
+  tarifa_jornada: number | null
+  num_jornadas: number | null
+  horas_fitting_extra: number | null
+  tarifa_hora_extra: number | null
+  num_travel_days: number | null
+  horas_extra_convenio: number | null
+  derechos_imagen: number | null
+  comision_pct: number | null
+  importe_bruto: number | null    // doblaje / evento
+  importe_neto: number | null     // doblaje / evento
+  tarifa_neta_jornada: number | null
+  tarifa_traslado: number | null
+  num_takes: number | null
 }
 
 export type RolActorPublicidad = 'ocp' | 'secundario' | 'fe'
@@ -136,4 +178,17 @@ export interface Contacto {
   email: string | null
   telefono: string | null
   notas: string | null
+}
+
+export interface CalendarEvent {
+  id: string
+  created_at: string
+  user_id: string
+  title: string
+  event_type: EventType
+  event_date_start: string // YYYY-MM-DD
+  event_date_end: string | null // YYYY-MM-DD
+  related_casting_id: string | null
+  related_finance_id: string | null
+  notes: string | null
 }

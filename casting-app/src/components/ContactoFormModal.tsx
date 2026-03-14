@@ -4,7 +4,7 @@ import Modal from '@/components/Modal'
 import { Contacto, TipoContacto } from '@/lib/supabase'
 import { Save } from 'lucide-react'
 
-type ContactoForm = Omit<Contacto, 'id' | 'created_at'>
+type ContactoForm = Omit<Contacto, 'id' | 'created_at' | 'user_id'>
 
 const defaultForm: ContactoForm = {
     nombre: '',
