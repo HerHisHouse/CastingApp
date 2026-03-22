@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase, Casting, Proyecto, Finanza, Contacto, CalendarEvent } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
-import { syncCastingEvents, syncFinanceEvents } from '@/lib/calendarSync'
+import { syncCastingEvents, syncFinanceEvents, syncProjectEvents } from '@/lib/calendarSync'
 
 const AUTO_DISCARD_DAYS = 30
 
@@ -73,7 +73,9 @@ export function useCastings() {
     }
 
     const update = async (id: string, values: Partial<Casting>) => {
-        const { data: updatedRows, error: err } = await supabase.from('castings').update(values).eq('id', id).select()
+        // Excluir campos que no deben actualizarse para evitar errores de clave duplicada
+        const { id: _, created_at: __, ...cleanValues } = values as any
+        const { data: updatedRows, error: err } = await supabase.from('castings').update(cleanValues).eq('id', id).select()
         if (err) throw err
         if (updatedRows && updatedRows[0] && user) {
             try { await syncCastingEvents(updatedRows[0] as Casting, user.id) } catch (e) { console.warn('Calendar sync skipped:', e) }
@@ -113,18 +115,25 @@ export function useProyectos() {
     useEffect(() => { fetch() }, [fetch])
 
     const create = async (values: Omit<Proyecto, 'id' | 'created_at'>) => {
-        const { error: err } = await supabase.from('proyectos').insert(values)
+        const { data: newRows, error: err } = await supabase.from('proyectos').insert(values).select()
         if (err) throw err
+        if (newRows && newRows[0] && user) {
+            try { await syncProjectEvents(newRows[0] as Proyecto, user.id) } catch (e) { console.warn('Project calendar sync skipped:', e) }
+        }
         await fetch()
     }
 
     const update = async (id: string, values: Partial<Proyecto>) => {
-        const { error: err } = await supabase.from('proyectos').update(values).eq('id', id)
+        const { data: updatedRows, error: err } = await supabase.from('proyectos').update(values).eq('id', id).select()
         if (err) throw err
+        if (updatedRows && updatedRows[0] && user) {
+            try { await syncProjectEvents(updatedRows[0] as Proyecto, user.id) } catch (e) { console.warn('Project calendar sync skipped:', e) }
+        }
         await fetch()
     }
 
     const remove = async (id: string) => {
+        await supabase.from('calendar_events').delete().eq('related_project_id', id)
         const { error: err } = await supabase.from('proyectos').delete().eq('id', id)
         if (err) throw err
         await fetch()
@@ -253,5 +262,11 @@ export function useCalendarEvents() {
 
     useEffect(() => { fetch() }, [fetch])
 
-    return { data, loading, error, refetch: fetch }
+    const remove = async (id: string) => {
+        const { error: err } = await supabase.from('calendar_events').delete().eq('id', id)
+        if (err) throw err
+        await fetch()
+    }
+
+    return { data, loading, error, refetch: fetch, remove }
 }

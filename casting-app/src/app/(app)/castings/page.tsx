@@ -9,11 +9,11 @@ import {
 import { Casting, EstadoCasting } from '@/lib/supabase'
 import {
     Film, Plus, Search, Pencil, Trash2,
-    Clapperboard, ChevronDown, CheckCircle2, Circle, Bell
+    Clapperboard, ChevronDown, CheckCircle2, Circle, Bell, X
 } from 'lucide-react'
 
 const ESTADOS_OPCIONES: { val: EstadoCasting; label: string; color: string }[] = [
-    { val: 'pendiente', label: 'Pendiente envío', color: 'var(--text-secondary)' },
+    { val: 'pendiente', label: 'Recibido', color: 'var(--text-secondary)' },
     { val: 'enviado', label: 'En proceso', color: 'var(--info)' },
     { val: 'seleccionado', label: 'Seleccionado', color: 'var(--success)' },
     { val: 'descartado', label: 'Descartado', color: 'var(--danger)' },
@@ -21,46 +21,123 @@ const ESTADOS_OPCIONES: { val: EstadoCasting; label: string; color: string }[] =
 
 const estadoFilters = [
     { val: '', label: 'Todos' },
-    { val: 'pendiente', label: 'Pendientes' },
+    { val: 'pendiente', label: 'Recibidos' },
     { val: 'en_proceso', label: 'En proceso' },
-    { val: 'opcionado', label: 'Opcionados', color: '#f97316' }, // Updated color for 'opcionado'
+    { val: 'opcionado', label: 'Opcionados', color: '#f97316' },
     { val: 'callback', label: 'Con Callback' },
     { val: 'seleccionado', label: 'Seleccionado' },
     { val: 'descartado', label: 'Descartado' },
 ]
 
-// ── Mini pipeline para mostrar en la tabla ────────────────────────────────────
-function CastingMilestones({ casting }: { casting: Casting }) {
-    const dot = (done: boolean, label: string, color: string) => (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-            {done
-                ? <CheckCircle2 size={13} color={color} />
-                : <Circle size={13} color='rgba(255,255,255,0.15)' />}
-            <span style={{ fontSize: '9px', color: done ? color : 'rgba(255,255,255,0.2)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                {label}
-            </span>
-        </div>
-    )
-    const arrow = (active: boolean) => (
-        <span style={{ color: active ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)', fontSize: '10px', marginTop: '-6px' }}>›</span>
-    )
-    const resultColor = casting.estado === 'seleccionado' ? 'var(--success)'
-        : casting.estado === 'descartado' ? 'var(--danger)'
-            : 'rgba(255,255,255,0.2)'
-    const resultLabel = casting.estado === 'seleccionado' ? 'Elegido'
-        : casting.estado === 'descartado' ? 'Descartado'
-            : 'Pendiente'
+function CastingProgresionDropdown({ casting, onUpdate }: { casting: Casting, onUpdate: (id: string, data: Partial<Casting>) => Promise<void> }) {
+    const [open, setOpen] = useState(false)
+    const [updating, setUpdating] = useState(false)
+    const containerRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (!open) return
+        const handler = (e: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false)
+        }
+        document.addEventListener('mousedown', handler)
+        return () => document.removeEventListener('mousedown', handler)
+    }, [open])
+
+    const toggleFlag = async (field: 'fue_opcionado' | 'tuvo_callback') => {
+        setUpdating(true)
+        try {
+            await onUpdate(casting.id, { [field]: !casting[field] })
+        } finally {
+            setUpdating(false)
+        }
+    }
+
+    // Determinar hito principal para mostrar en el botón
+    const getActiveMilestone = () => {
+        if (casting.estado === 'seleccionado') return { label: 'Seleccionado', color: 'var(--success)', icon: <CheckCircle2 size={12} /> }
+        if (casting.estado === 'descartado') return { label: 'Descartado', color: 'var(--danger)', icon: <X size={12} /> }
+        if (casting.tuvo_callback) return { label: 'Callback', color: 'var(--warning)', icon: <CheckCircle2 size={12} /> }
+        if (casting.fue_opcionado) return { label: 'Opcionado', color: '#f97316', icon: <CheckCircle2 size={12} /> }
+        if (casting.estado === 'enviado') return { label: 'Enviado', color: 'var(--info)', icon: <CheckCircle2 size={12} /> }
+        return { label: 'Recibido', color: 'var(--text-secondary)', icon: <Circle size={12} /> }
+    }
+
+    const current = getActiveMilestone()
 
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            {dot(casting.estado !== 'pendiente', 'Enviado', 'var(--info)')}
-            {arrow(true)}
-            {dot(casting.fue_opcionado, 'Opcionado', '#f97316')}
-            {arrow(casting.fue_opcionado)}
-            {dot(casting.tuvo_callback, casting.tipo_callback === 'zoom' ? 'CB Zoom' : casting.tipo_callback === 'presencial' ? 'CB Presencial' : 'Callback', 'var(--warning)')}
-            {arrow(casting.fue_opcionado)}
-            {dot(casting.estado !== 'enviado' && casting.estado !== 'pendiente' && casting.estado !== 'callback' && casting.estado !== 'opcionado', resultLabel, resultColor)}
+        <div ref={containerRef} style={{ position: 'relative', display: 'inline-block' }}>
+            <button 
+                onClick={() => setOpen(!open)}
+                disabled={updating}
+                style={{ 
+                    display: 'flex', alignItems: 'center', gap: '6px', 
+                    padding: '4px 10px', borderRadius: '20px', 
+                    background: `${current.color}15`, border: `1px solid ${current.color}40`,
+                    color: current.color, fontSize: '11px', fontWeight: 700, 
+                    cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s'
+                }}
+            >
+                {current.icon}
+                {current.label}
+                <ChevronDown size={10} style={{ opacity: 0.5, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+            </button>
+
+            {open && (
+                <div style={{ 
+                    position: 'absolute', top: 'calc(100% + 5px)', left: 0, zIndex: 100,
+                    background: 'var(--bg-card)', border: '1px solid var(--border)',
+                    borderRadius: '10px', padding: '6px', minWidth: '150px',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.5)', animation: 'scaleUp 0.1s ease-out'
+                }}>
+                    <div style={{ padding: '4px 8px', fontSize: '9px', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>Hitos del Proceso</div>
+                    
+                    <MilestoneItem label="Enviado" done={casting.estado !== 'pendiente'} color="var(--info)" />
+                    
+                    <MilestoneItem 
+                        label="Opcionado" 
+                        done={casting.fue_opcionado} 
+                        color="#f97316" 
+                        onClick={() => toggleFlag('fue_opcionado')}
+                        isAction
+                    />
+                    
+                    <MilestoneItem 
+                        label={casting.tipo_callback === 'zoom' ? 'Callback Zoom' : 'Callback'} 
+                        done={casting.tuvo_callback} 
+                        color="var(--warning)" 
+                        onClick={() => toggleFlag('tuvo_callback')}
+                        isAction
+                    />
+
+                    {casting.estado === 'seleccionado' && (
+                        <MilestoneItem label="¡Seleccionado!" done={true} color="var(--success)" />
+                    )}
+                </div>
+            )}
         </div>
+    )
+}
+
+function MilestoneItem({ label, done, color, onClick, isAction }: { label: string, done: boolean, color: string, onClick?: () => void, isAction?: boolean }) {
+    return (
+        <button 
+            onClick={onClick}
+            disabled={!isAction}
+            style={{ 
+                display: 'flex', alignItems: 'center', gap: '8px', 
+                width: '100%', padding: '7px 10px', borderRadius: '6px',
+                background: 'transparent', border: 'none',
+                color: done ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontSize: '12px', cursor: isAction ? 'pointer' : 'default',
+                textAlign: 'left', transition: 'background 0.2s'
+            }}
+            onMouseEnter={e => isAction && (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+            onMouseLeave={e => isAction && (e.currentTarget.style.background = 'transparent')}
+        >
+            {done ? <CheckCircle2 size={13} color={color} /> : <Circle size={13} style={{ opacity: 0.2 }} />}
+            <span style={{ flex: 1, fontWeight: done ? 600 : 400 }}>{label}</span>
+            {isAction && <span style={{ fontSize: '9px', opacity: 0.4 }}>{done ? 'Quitar' : 'Marcar'}</span>}
+        </button>
     )
 }
 
@@ -205,7 +282,12 @@ export default function CastingsPage() {
             await createProyecto({
                 casting_id: casting.id, proyecto: casting.proyecto, personaje: casting.personaje,
                 tipo_proyecto: casting.tipo_proyecto, productora: casting.productora, director: casting.director_casting,
-                fecha_inicio: null, fecha_fin: null, fecha_rodaje: casting.fechas_rodaje || null, notas: casting.notas ?? null,
+                fecha_inicio: casting.fecha_inicio || null, fecha_fin: casting.fecha_fin || null, 
+                fecha_rodaje: casting.fechas_rodaje || null,
+                prueba_vestuario_fecha: casting.prueba_vestuario_fecha || null,
+                travel_ida: casting.travel_ida || casting.travel_fecha || null,
+                travel_vuelta: casting.travel_vuelta || null,
+                notas: casting.notas ?? null,
                 rol: casting.rol_seleccionado as any || null,
                 tarifa_jornada: casting.tarifa_jornada || (casting.rol_seleccionado === 'ocp' ? casting.ocp_tarifa_bruta : casting.rol_seleccionado === 'secundario' ? casting.sec_tarifa_bruta : casting.rol_seleccionado === 'fe' ? casting.fe_tarifa_bruta : null),
                 num_jornadas: casting.num_jornadas || 1,
@@ -240,25 +322,36 @@ export default function CastingsPage() {
                 {/* Stats Summary */}
                 <div className="stat-grid mb-6">
                     {[
-                        { val: '', label: 'Total', color: 'var(--text-secondary)', count: data.length },
+                        { val: 'recibidos', label: 'Recibidos', color: 'var(--text-secondary)', count: data.length },
+                        { val: 'enviados', label: 'Enviados', color: 'var(--info)', count: data.filter(c => c.estado !== 'pendiente').length },
                         { val: 'opcionado', label: 'Opcionados', color: '#f97316', count: data.filter(c => c.fue_opcionado).length },
                         { val: 'callback', label: 'Con Callback', color: 'var(--warning)', count: data.filter(c => c.tuvo_callback).length },
                         { val: 'seleccionado', label: 'Seleccionados', color: 'var(--success)', count: data.filter(c => c.estado === 'seleccionado').length },
-                        { val: 'descartado', label: 'Descartados', color: 'var(--danger)', count: data.filter(c => c.estado === 'descartado').length },
                     ].map(({ val, label, color, count }) => (
                         <div
                             key={val}
-                            className={`stat-card cursor-pointer ${estadoFilter === val ? 'active' : ''}`}
-                            onClick={() => setEstadoFilter(val)}
+                            className={`stat-card cursor-pointer ${estadoFilter === (val === 'recibidos' ? 'pendiente' : val === 'enviados' ? 'en_proceso' : val) ? 'active' : ''}`}
+                            onClick={() => setEstadoFilter(val === 'recibidos' ? 'pendiente' : val === 'enviados' ? 'en_proceso' : val)}
                             style={{
                                 borderLeft: `3px solid ${color}`,
-                                background: estadoFilter === val ? 'rgba(255,255,255,0.04)' : 'var(--bg-card)'
+                                background: (estadoFilter === (val === 'recibidos' ? 'pendiente' : val === 'enviados' ? 'en_proceso' : val)) ? 'rgba(255,255,255,0.04)' : 'var(--bg-card)'
                             }}
                         >
                             <div className="stat-value" style={{ color }}>{count}</div>
                             <div className="stat-label" style={{ marginBottom: 0 }}>{label}</div>
                         </div>
                     ))}
+                </div>
+
+                {/* Received vs Sent Progress Bar */}
+                <div className="card mb-6" style={{ padding: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px', fontWeight: 600 }}>
+                        <span>Progreso de Castings: Recibidos ({data.length}) vs Enviados ({data.filter(c => c.estado !== 'pendiente').length})</span>
+                        <span style={{ color: 'var(--info)' }}>{data.length ? Math.round((data.filter(c => c.estado !== 'pendiente').length / data.length) * 100) : 0}% efectividad</span>
+                    </div>
+                    <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden', display: 'flex' }}>
+                        <div style={{ width: `${data.length ? (data.filter(c => c.estado !== 'pendiente').length / data.length) * 100 : 0}%`, background: 'var(--info)', borderRadius: '4px' }} />
+                    </div>
                 </div>
 
                 <div className="action-row">
@@ -303,7 +396,7 @@ export default function CastingsPage() {
                                             </td>
                                             <td><DeadlineBadge date={c.fecha_casting} /></td>
                                             <td style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{c.director_casting || '—'}</td>
-                                            <td><CastingMilestones casting={c} /></td>
+                                            <td><CastingProgresionDropdown casting={c} onUpdate={update} /></td>
                                             <td><EstadoBadgeInline casting={c} onUpdate={handleEstadoUpdate} /></td>
                                             <td>
                                                 <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
@@ -325,7 +418,13 @@ export default function CastingsPage() {
                 </div>
             </div>
 
-            <CastingFormModal open={modalOpen} onClose={() => { setModalOpen(false); setEditing(null) }} onSave={handleSave} initial={editing} />
+            <CastingFormModal
+                key={editing?.id || 'new'}
+                open={modalOpen}
+                onClose={() => { setModalOpen(false); setEditing(null) }}
+                onSave={handleSave}
+                initial={editing}
+            />
 
             {deleteConfirm && (
                 <div className="modal-overlay" onClick={() => setDeleteConfirm(null)}>

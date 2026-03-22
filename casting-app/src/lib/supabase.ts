@@ -44,7 +44,7 @@ export type FuenteCasting = 'representante' | 'director_casting' | 'autocasting'
 export type TipoIngreso = 'nomina' | 'derechos_imagen' | 'buyout' | 'royalties' | 'callback'
 export type EstadoPago = 'pendiente' | 'pagado' | 'parcial'
 export type TipoContacto = 'director_casting' | 'representante' | 'productor' | 'director'
-export type EventType = 'casting_deadline' | 'opcionado_ppm' | 'callback' | 'wardrobe_fitting' | 'shooting_day' | 'finance_due'
+export type EventType = 'casting_deadline' | 'opcionado_ppm' | 'callback' | 'wardrobe_fitting' | 'shooting_day' | 'travel_day' | 'finance_due'
 
 export interface RolEconomico {
   tarifa_bruta: number | null
@@ -77,12 +77,17 @@ export interface Casting {
   // ── Nuevos campos ──────────────────────────
   localizacion: string | null
   fechas_rodaje: string | null
+  fecha_inicio: string | null      // Nueva: Inicio de rodaje (vinculado a proyectos)
+  fecha_fin: string | null         // Nueva: Fin de rodaje (vinculado a proyectos)
   prueba_vestuario_fecha: string | null
   callback_fecha: string | null
   callback_salario: number | null
   ppm_fecha: string | null        // PPM (fecha de elección de elenco)
-  travel_fecha: string | null     // Fecha de viaje
+  travel_fecha: string | null     // Deprecada a favor de travel_ida
+  travel_ida: string | null       // Nueva: Fecha de ida
+  travel_vuelta: string | null    // Nueva: Fecha de vuelta
   // ── Economía multi-rol (publicidad) ────────
+
   roles_seleccionados: string | null   // JSON array: ['ocp','secundario','fe']
   // OCP
   ocp_tarifa_bruta: number | null
@@ -125,6 +130,9 @@ export interface Proyecto {
   fecha_inicio: string | null
   fecha_fin: string | null
   fecha_rodaje: string | null
+  prueba_vestuario_fecha: string | null
+  travel_ida: string | null
+  travel_vuelta: string | null
   notas: string | null
   // ── Datos económicos ──────────────────────────────────────────────
   rol: RolActorPublicidad | null          // OCP / Secundario / FE
@@ -189,6 +197,7 @@ export interface CalendarEvent {
   event_date_start: string // YYYY-MM-DD
   event_date_end: string | null // YYYY-MM-DD
   related_casting_id: string | null
+  related_project_id: string | null  // Nuevo: Referencia a proyectos
   related_finance_id: string | null
   notes: string | null
 }

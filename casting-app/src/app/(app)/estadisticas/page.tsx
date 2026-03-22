@@ -43,6 +43,7 @@ export default function EstadisticasPage() {
     // Datos del funnel de progresión
     const funnelData = useMemo(() => {
         const total = castings.length
+        const enviados = castings.filter(c => c.estado !== 'pendiente').length
         const opcionados = castings.filter(c => c.fue_opcionado).length
         const conCallback = castings.filter(c => c.tuvo_callback).length
         const seleccionados = castings.filter(c => c.estado === 'seleccionado').length
@@ -51,7 +52,7 @@ export default function EstadisticasPage() {
         const selSinCallback = castings.filter(c => c.estado === 'seleccionado' && !c.tuvo_callback).length
         const selConCallback = castings.filter(c => c.estado === 'seleccionado' && c.tuvo_callback).length
 
-        return { total, opcionados, conCallback, seleccionados, descartados, selSinCallback, selConCallback }
+        return { total, enviados, opcionados, conCallback, seleccionados, descartados, selSinCallback, selConCallback }
     }, [castings])
 
     // Ratios corregidos con los hitos
@@ -163,10 +164,11 @@ export default function EstadisticasPage() {
                     ) : (
                         <div style={{ display: 'flex', alignItems: 'stretch', gap: '3px' }}>
                             {[
-                                { label: 'Enviados', count: funnelData.total, color: '#7c6af7', pct: 100 },
+                                { label: 'Recibidos', count: funnelData.total, color: 'var(--text-secondary)', pct: 100 },
+                                { label: 'Enviados', count: funnelData.enviados, color: '#7c6af7', pct: funnelData.total ? (funnelData.enviados / funnelData.total * 100) : 0 },
                                 { label: 'Opcionados', count: funnelData.opcionados, color: '#f97316', pct: funnelData.total ? (funnelData.opcionados / funnelData.total * 100) : 0 },
-                                { label: 'Con Callback', count: funnelData.conCallback, color: '#fbbf24', pct: funnelData.total ? (funnelData.conCallback / funnelData.total * 100) : 0 },
-                                { label: 'Seleccionados', count: funnelData.seleccionados, color: '#34d399', pct: funnelData.total ? (funnelData.seleccionados / funnelData.total * 100) : 0 },
+                                { label: 'Callback', count: funnelData.conCallback, color: '#fbbf24', pct: funnelData.total ? (funnelData.conCallback / funnelData.total * 100) : 0 },
+                                { label: 'Elegido', count: funnelData.seleccionados, color: '#34d399', pct: funnelData.total ? (funnelData.seleccionados / funnelData.total * 100) : 0 },
                             ].map(({ label, count, color, pct }, i) => (
                                 <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                                     <div style={{
@@ -175,7 +177,7 @@ export default function EstadisticasPage() {
                                         maxHeight: '80px',
                                         minHeight: '12px',
                                         background: color,
-                                        borderRadius: i === 0 ? '8px 0 0 8px' : i === 3 ? '0 8px 8px 0' : '0',
+                                        borderRadius: i === 0 ? '8px 0 0 8px' : i === 4 ? '0 8px 8px 0' : '0',
                                         opacity: 0.85,
                                         transition: 'height 0.4s ease',
                                     }} />

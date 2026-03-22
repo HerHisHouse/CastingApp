@@ -1,4 +1,4 @@
-import { supabase, Casting, Finanza, CalendarEvent } from './supabase'
+import { supabase, Casting, Proyecto, Finanza, CalendarEvent } from './supabase'
 
 /**
  * Sincroniza los eventos del calendario para un casting específico.
@@ -7,7 +7,16 @@ import { supabase, Casting, Finanza, CalendarEvent } from './supabase'
 export async function syncCastingEvents(casting: Casting, userId: string) {
     if (!casting.id) return
 
-    // 1. Borrar eventos previos de este casting
+    // 1. Comprobar si este casting ya tiene un proyecto asociado
+    const { data: project } = await supabase
+        .from('proyectos')
+        .select('id')
+        .eq('casting_id', casting.id)
+        .maybeSingle()
+
+    const hasProject = !!project
+
+    // 2. Borrar eventos previos de este casting
     await supabase.from('calendar_events').delete().eq('related_casting_id', casting.id)
 
     const events: Omit<CalendarEvent, 'id' | 'created_at'>[] = []
@@ -21,6 +30,7 @@ export async function syncCastingEvents(casting: Casting, userId: string) {
             event_date_start: casting.fecha_casting,
             event_date_end: null,
             related_casting_id: casting.id,
+            related_project_id: null,
             related_finance_id: null,
             notes: casting.personaje
         })
@@ -35,13 +45,14 @@ export async function syncCastingEvents(casting: Casting, userId: string) {
             event_date_start: casting.callback_fecha,
             event_date_end: null,
             related_casting_id: casting.id,
+            related_project_id: null,
             related_finance_id: null,
             notes: null
         })
     }
 
-    // 4. Fitting
-    if (casting.prueba_vestuario_fecha) {
+    // 4. Fitting - SOLO si está seleccionado y NO tiene proyecto (si tiene proyecto, lo gestiona el proyecto)
+    if (casting.prueba_vestuario_fecha && casting.estado === 'seleccionado' && !hasProject) {
         events.push({
             user_id: userId,
             title: `Fitting: ${casting.proyecto}`,
@@ -49,13 +60,14 @@ export async function syncCastingEvents(casting: Casting, userId: string) {
             event_date_start: casting.prueba_vestuario_fecha,
             event_date_end: null,
             related_casting_id: casting.id,
+            related_project_id: null,
             related_finance_id: null,
             notes: null
         })
     }
 
-    // 5. PPM
-    if (casting.ppm_fecha) {
+    // 5. PPM - SOLO si está opcionado y NO tiene proyecto
+    if (casting.ppm_fecha && casting.fue_opcionado && !hasProject) {
         events.push({
             user_id: userId,
             title: `PPM: ${casting.proyecto}`,
@@ -63,47 +75,95 @@ export async function syncCastingEvents(casting: Casting, userId: string) {
             event_date_start: casting.ppm_fecha,
             event_date_end: null,
             related_casting_id: casting.id,
+            related_project_id: null,
             related_finance_id: null,
             notes: null
         })
     }
 
-    // 6. Rodaje (fechas_rodaje) - Intentamos extraer fechas DD-MM-YYYY o YYYY-MM-DD
-    if (casting.fechas_rodaje) {
-        // Formato DD-MM-YYYY o YYYY-MM-DD
-        const dateMatch = casting.fechas_rodaje.match(/\d{2,4}[-/]\d{2}[-/]\d{2,4}/g)
-        if (dateMatch) {
-            dateMatch.forEach(d => {
-                const parts = d.split(/[-/]/)
-                if (parts.length === 3) {
-                    let formattedDate = d;
-                    if (parts[2].length === 4) {
-                        // Es DD-MM-YYYY
-                        formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`
-                    } else if (parts[0].length === 4) {
-                        // Es YYYY-MM-DD
-                        formattedDate = `${parts[0]}-${parts[1]}-${parts[2]}`
-                    }
-                    if (formattedDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                        events.push({
-                            user_id: userId,
-                            title: `Rodaje: ${casting.proyecto}`,
-                            event_type: 'shooting_day',
-                            event_date_start: formattedDate,
-                            event_date_end: null,
-                            related_casting_id: casting.id,
-                            related_finance_id: null,
-                            notes: casting.fechas_rodaje
-                        })
-                    }
-                }
+    // 6. Trabajo / Rodaje - SOLO si está seleccionado y NO tiene proyecto
+    if (casting.estado === 'seleccionado' && !hasProject) {
+        // Opción A: Por rango de fechas (fecha_inicio / fecha_fin)
+        if (casting.fecha_inicio) {
+            events.push({
+                user_id: userId,
+                title: `TRABAJO: ${casting.proyecto}`,
+                event_type: 'shooting_day',
+                event_date_start: casting.fecha_inicio,
+                event_date_end: casting.fecha_fin || casting.fecha_inicio,
+                related_casting_id: casting.id,
+                related_project_id: null,
+                related_finance_id: null,
+                notes: `Rodaje: ${casting.proyecto}`
             })
+        } 
+        // Opción B: Por texto (retrocompatibilidad)
+        else if (casting.fechas_rodaje) {
+            const dateMatch = casting.fechas_rodaje.match(/\d{2,4}[-/]\d{2}[-/]\d{2,4}/g)
+            if (dateMatch) {
+                dateMatch.forEach(d => {
+                    const parts = d.split(/[-/]/)
+                    if (parts.length === 3) {
+                        let formattedDate = d;
+                        if (parts[2].length === 4) formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`
+                        else if (parts[0].length === 4) formattedDate = `${parts[0]}-${parts[1]}-${parts[2]}`
+                        
+                        if (formattedDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                            events.push({
+                                user_id: userId,
+                                title: `TRABAJO: ${casting.proyecto}`,
+                                event_type: 'shooting_day',
+                                event_date_start: formattedDate,
+                                event_date_end: null,
+                                related_casting_id: casting.id,
+                                related_project_id: null,
+                                related_finance_id: null,
+                                notes: casting.fechas_rodaje
+                            })
+                        }
+                    }
+                })
+            }
         }
     }
 
+    // 7. Travel Days - SOLO si NO tiene proyecto
+    if (!hasProject && casting.travel_ida) {
+        events.push({
+            user_id: userId,
+            title: `Viaje (Ida): ${casting.proyecto}`,
+            event_type: 'travel_day',
+            event_date_start: casting.travel_ida,
+            event_date_end: null,
+            related_casting_id: casting.id,
+            related_project_id: null,
+            related_finance_id: null,
+            notes: 'Viaje de ida'
+        })
+    }
+    if (!hasProject && casting.travel_vuelta) {
+        events.push({
+            user_id: userId,
+            title: `Viaje (Vuelta): ${casting.proyecto}`,
+            event_type: 'travel_day',
+            event_date_start: casting.travel_vuelta,
+            event_date_end: null,
+            related_casting_id: casting.id,
+            related_project_id: null,
+            related_finance_id: null,
+            notes: 'Viaje de vuelta'
+        })
+    }
+
     if (events.length > 0) {
+        console.log('Intentando sincronizar', events.length, 'eventos para el usuario:', userId);
         const { error } = await supabase.from('calendar_events').insert(events)
-        if (error) console.error('Error syncing casting events:', error)
+        if (error) {
+            const errorMsg = `❌ Error Supabase [${error.code}]: ${error.message}${error.details ? ' | Detalle: ' + error.details : ''}${error.hint ? ' | Hint: ' + error.hint : ''}`;
+            console.error(errorMsg);
+            console.log('Payload completo:', events);
+            throw new Error(errorMsg); // Forzar que aparezca en el overlay de Next.js
+        }
     }
 }
 
@@ -123,9 +183,83 @@ export async function syncFinanceEvents(finanza: Finanza, userId: string) {
             event_date_start: finanza.fecha_limite_cobro,
             event_date_end: null,
             related_casting_id: null,
+            related_project_id: null,
             related_finance_id: finanza.id,
             notes: null
         } as any)
         if (error) console.error('Error syncing finance events:', error)
+    }
+}
+
+/**
+ * Sincroniza los eventos del calendario para un proyecto.
+ */
+export async function syncProjectEvents(proyecto: Proyecto, userId: string) {
+    if (!proyecto.id) return
+
+    await supabase.from('calendar_events').delete().eq('related_project_id', proyecto.id)
+    const events: any[] = []
+
+    // 1. Rango de Trabajo
+    if (proyecto.fecha_inicio) {
+        events.push({
+            user_id: userId,
+            title: `Trabajo: ${proyecto.proyecto}`,
+            event_type: 'shooting_day',
+            event_date_start: proyecto.fecha_inicio,
+            event_date_end: proyecto.fecha_fin || proyecto.fecha_inicio,
+            related_casting_id: null,
+            related_project_id: proyecto.id,
+            related_finance_id: null,
+            notes: `Personaje: ${proyecto.personaje}`
+        })
+    }
+
+    // 2. Fitting
+    if (proyecto.prueba_vestuario_fecha) {
+        events.push({
+            user_id: userId,
+            title: `Fitting: ${proyecto.proyecto}`,
+            event_type: 'wardrobe_fitting',
+            event_date_start: proyecto.prueba_vestuario_fecha,
+            event_date_end: null,
+            related_casting_id: null,
+            related_project_id: proyecto.id,
+            related_finance_id: null,
+            notes: null
+        })
+    }
+
+    // 3. Travel
+    if (proyecto.travel_ida) {
+        events.push({
+            user_id: userId,
+            title: `Viaje (Ida): ${proyecto.proyecto}`,
+            event_type: 'travel_day',
+            event_date_start: proyecto.travel_ida,
+            event_date_end: null,
+            related_casting_id: null,
+            related_project_id: proyecto.id,
+            related_finance_id: null,
+            notes: null
+        })
+    }
+    if (proyecto.travel_vuelta) {
+        events.push({
+            user_id: userId,
+            title: `Viaje (Vuelta): ${proyecto.proyecto}`,
+            event_type: 'travel_day',
+            event_date_start: proyecto.travel_vuelta,
+            event_date_end: null,
+            related_casting_id: null,
+            related_project_id: proyecto.id,
+            related_finance_id: null,
+            notes: null
+        })
+    }
+
+    if (events.length > 0) {
+        const { error } = await supabase.from('calendar_events').insert(events)
+        if (error) console.error('Error syncing project events:', error, 'Payload:', events)
     }
 }

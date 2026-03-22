@@ -1,10 +1,10 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Modal from '@/components/Modal'
 import { Casting, TipoProyecto, TipoCasting, EstadoCasting, FuenteCasting } from '@/lib/supabase'
 import { TIPOS_CASTING, TIPOS_PROYECTO, FUENTES } from '@/components/ui'
 import { useCastings } from '@/hooks/useData'
-import { Save, CheckCircle2, Circle, ArrowRight, Bell } from 'lucide-react'
+import { Save, CheckCircle2, Circle, ArrowRight, Bell, X } from 'lucide-react'
 
 type CastingForm = Omit<Casting, 'id' | 'created_at' | 'user_id'>
 
@@ -36,6 +36,10 @@ const defaultForm: CastingForm = {
     num_takes: null,
     ppm_fecha: null,
     travel_fecha: null,
+    travel_ida: null,
+    travel_vuelta: null,
+    fecha_inicio: null,
+    fecha_fin: null,
 }
 
 interface Props {
@@ -103,6 +107,32 @@ function EuroInput({ label, value, onChange, placeholder }: {
     )
 }
 
+function DateInput({ label, value, onChange, placeholder }: {
+    label?: string, value: string | null, onChange: (v: string | null) => void, placeholder?: string,
+}) {
+    return (
+        <div className="form-group" style={{ position: 'relative' }}>
+            {label && <label className="form-label">{label}</label>}
+            <div style={{ position: 'relative' }}>
+                <input type="date" className="form-input"
+                    value={value || ''}
+                    onChange={e => onChange(e.target.value || null)} />
+                {value && (
+                    <button type="button" onClick={() => onChange(null)}
+                        style={{
+                            position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
+                            background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '50%',
+                            width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer', color: 'var(--text-secondary)', zIndex: 2
+                        }}>
+                        <X size={10} />
+                    </button>
+                )}
+            </div>
+        </div>
+    )
+}
+
 const ROLES = [
     { key: 'ocp', label: 'OCP (Principal)' },
     { key: 'secundario', label: 'Secundario' },
@@ -118,6 +148,11 @@ export default function CastingFormModal({ open, onClose, onSave, initial }: Pro
 
     const set = <K extends keyof CastingForm>(key: K, val: CastingForm[K]) =>
         setForm(prev => ({ ...prev, [key]: val }))
+
+    useEffect(() => {
+        setForm(initial ? { ...initial } : defaultForm)
+        setError(null)
+    }, [initial, open])
 
     // Parsed roles array
     const rolesArr: string[] = useMemo(() => {
@@ -151,8 +186,16 @@ export default function CastingFormModal({ open, onClose, onSave, initial }: Pro
     const handleSave = async () => {
         if (!form.proyecto || !form.fecha_casting) { setError('Rellena los campos obligatorios.'); return }
         setSaving(true); setError(null)
-        try { await onSave(form); onClose() }
-        catch (e: unknown) { setError(e instanceof Error ? e.message : 'Error al guardar') }
+        try {
+            // Depuración para el error al guardar
+            console.log('Guardando casting con valores:', form)
+            await onSave(form)
+            onClose()
+        }
+        catch (e: any) {
+            console.error('Error al guardar casting:', e)
+            setError(e.message || 'Error al guardar. Revisa la consola para más detalles.')
+        }
         finally { setSaving(false) }
     }
 
@@ -202,7 +245,12 @@ export default function CastingFormModal({ open, onClose, onSave, initial }: Pro
             <SectionTitle title="Progresión del Casting" />
             <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '12px', padding: '14px', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
-                    <PipelineStep done={form.estado !== 'pendiente'} active={form.estado === 'pendiente'} label="Registrado" />
+                    <PipelineStep
+                        done={form.estado !== 'pendiente'}
+                        active={form.estado === 'pendiente'}
+                        label="Recibido"
+                        onClick={() => set('estado', 'pendiente')}
+                    />
                     <ArrowRight size={13} color="var(--border-light)" style={{ flexShrink: 0 }} />
                     <PipelineStep
                         done={['enviado', 'opcionado', 'callback', 'seleccionado', 'descartado'].includes(form.estado)}
@@ -231,9 +279,9 @@ export default function CastingFormModal({ open, onClose, onSave, initial }: Pro
                                 borderColor: form.estado === 'seleccionado' ? 'rgba(52,211,153,0.4)' : form.estado === 'descartado' ? 'rgba(248,113,113,0.4)' : 'var(--border)',
                                 color: form.estado === 'seleccionado' ? 'var(--success)' : form.estado === 'descartado' ? 'var(--danger)' : 'var(--text-secondary)',
                             }}>
-                            <option value="pendiente">📋 Pendiente envío</option>
+                            <option value="pendiente">📋 Recibido (pendiente envío)</option>
                             <option value="enviado">📤 Enviado / En proceso</option>
-                            <option value="seleccionado">✓ Seleccionado</option>
+                            <option value="seleccionado">✓ Seleccionado / Ganado</option>
                             <option value="descartado">✗ Descartado</option>
                         </select>
                     </div>
@@ -306,8 +354,7 @@ export default function CastingFormModal({ open, onClose, onSave, initial }: Pro
                     </select>
                 </div>
                 <div className="form-group">
-                    <label className="form-label">📅 Fecha máx. de entrega *</label>
-                    <input type="date" className="form-input" value={form.fecha_casting} onChange={e => set('fecha_casting', e.target.value)} />
+                    <DateInput label="📅 Fecha máx. de entrega *" value={form.fecha_casting} onChange={v => set('fecha_casting', v || '')} />
                 </div>
             </div>
 
@@ -359,15 +406,13 @@ export default function CastingFormModal({ open, onClose, onSave, initial }: Pro
                     <input className="form-input" value={form.fechas_rodaje || ''} onChange={e => set('fechas_rodaje', e.target.value || null)} placeholder="Ej: 15-20 Abr, 3 May…" />
                 </div>
             </div>
+            <div className="form-grid">
+                <DateInput label="FECHA DE INICIO" value={form.fecha_inicio} onChange={v => set('fecha_inicio', v)} />
+                <DateInput label="FECHA DE FIN" value={form.fecha_fin} onChange={v => set('fecha_fin', v)} />
+            </div>
             <div className="form-grid-3">
-                <div className="form-group">
-                    <label className="form-label">PPM (fecha de elección de elenco)</label>
-                    <input type="date" className="form-input" value={form.ppm_fecha || ''} onChange={e => set('ppm_fecha', e.target.value || null)} />
-                </div>
-                <div className="form-group">
-                    <label className="form-label">Callback (fecha)</label>
-                    <input type="date" className="form-input" value={form.callback_fecha || ''} onChange={e => set('callback_fecha', e.target.value || null)} />
-                </div>
+                <DateInput label="PPM (fecha)" value={form.ppm_fecha} onChange={v => set('ppm_fecha', v)} />
+                <DateInput label="Callback (fecha)" value={form.callback_fecha} onChange={v => set('callback_fecha', v)} />
                 <EuroInput label="Salario Callback" value={form.callback_salario} onChange={v => set('callback_salario', v)} placeholder="30.00" />
             </div>
 
@@ -443,15 +488,10 @@ export default function CastingFormModal({ open, onClose, onSave, initial }: Pro
                         )}
 
                         {/* Fitting y Travel (como Fechas) */}
-                        <div className="form-grid">
-                            <div className="form-group">
-                                <SectionTitle color="#fbbf24" emoji="👗" title="Fitting (Fecha)" />
-                                <input type="date" className="form-input" value={form.prueba_vestuario_fecha || ''} onChange={e => set('prueba_vestuario_fecha', e.target.value || null)} />
-                            </div>
-                            <div className="form-group">
-                                <SectionTitle color="#60a5fa" emoji="✈️" title="Travel Days (Fecha)" />
-                                <input type="date" className="form-input" value={form.travel_fecha || ''} onChange={e => set('travel_fecha', e.target.value || null)} />
-                            </div>
+                        <div className="form-grid-3">
+                            <DateInput label="👗 Fitting (Fecha)" value={form.prueba_vestuario_fecha} onChange={v => set('prueba_vestuario_fecha', v)} />
+                            <DateInput label="✈️ Travel (Ida)" value={form.travel_ida || form.travel_fecha} onChange={v => { set('travel_ida', v); set('travel_fecha', v) }} />
+                            <DateInput label="✈️ Travel (Vuelta)" value={form.travel_vuelta} onChange={v => set('travel_vuelta', v)} />
                         </div>
                     </div>
                 </div>

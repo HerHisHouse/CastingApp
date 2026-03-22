@@ -334,6 +334,7 @@ export default function ProyectosPage() {
             </div>
 
             <ProyectoFormModal
+                key={editing?.id || 'new'}
                 open={modalOpen}
                 onClose={() => { setModalOpen(false); setEditing(null) }}
                 onSave={handleSave}

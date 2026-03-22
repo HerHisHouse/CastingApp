@@ -8,34 +8,36 @@ import {
 import { es } from 'date-fns/locale'
 import {
     ChevronLeft, ChevronRight, X, Calendar as CalendarIcon,
-    Info, ExternalLink, ChevronDown
+    Info, ExternalLink, ChevronDown, Trash2
 } from 'lucide-react'
 import { useCalendarEvents } from '@/hooks/useData'
 import { CalendarEvent, EventType } from '@/lib/supabase'
 
 // ── Colores por tipo de evento ──────────────────────────────────────────────
 const EVENT_CONFIG: Record<EventType, { color: string; emoji: string; label: string }> = {
-    casting_deadline: { color: '#f87171', emoji: '🔴', label: 'Fecha límite casting' },
-    opcionado_ppm: { color: '#fb923c', emoji: '🟠', label: 'PPM' },
-    callback: { color: '#facc15', emoji: '🟡', label: 'Callback' },
-    wardrobe_fitting: { color: '#60a5fa', emoji: '🔵', label: 'Fitting' },
-    shooting_day: { color: '#4ade80', emoji: '🟢', label: 'Rodaje' },
-    finance_due: { color: '#a78bfa', emoji: '🟣', label: 'Límite de cobro' },
+    casting_deadline: { color: '#ef4444', emoji: '🔴', label: 'Fecha límite casting' },
+    opcionado_ppm: { color: '#f97316', emoji: '🟠', label: 'PPM' },
+    callback: { color: '#eab308', emoji: '🟡', label: 'Callback' },
+    wardrobe_fitting: { color: '#3b82f6', emoji: '🔵', label: 'Fitting' },
+    shooting_day: { color: '#22c55e', emoji: '🟢', label: 'Trabajo' },
+    travel_day: { color: '#8b5cf6', emoji: '✈️', label: 'Viaje' },
+    finance_due: { color: '#d946ef', emoji: '🟣', label: 'Límite de cobro' },
 }
 
 // Grupos de filtros — cada grupo incluye los event_types que cubre
 const FILTER_GROUPS: { key: string; label: string; color: string; types: EventType[] }[] = [
-    { key: 'castings', label: 'Castings', color: '#f87171', types: ['casting_deadline'] },
-    { key: 'callbacks', label: 'Callbacks', color: '#facc15', types: ['callback'] },
-    { key: 'ppm', label: 'PPM', color: '#fb923c', types: ['opcionado_ppm'] },
-    { key: 'fittings', label: 'Fitting', color: '#60a5fa', types: ['wardrobe_fitting'] },
-    { key: 'rodajes', label: 'Rodajes', color: '#4ade80', types: ['shooting_day'] },
-    { key: 'finanzas', label: 'Finanzas', color: '#a78bfa', types: ['finance_due'] },
+    { key: 'castings', label: 'Castings', color: '#ef4444', types: ['casting_deadline'] },
+    { key: 'callbacks', label: 'Callbacks', color: '#eab308', types: ['callback'] },
+    { key: 'ppm', label: 'PPM', color: '#f97316', types: ['opcionado_ppm'] },
+    { key: 'fittings', label: 'Fitting', color: '#3b82f6', types: ['wardrobe_fitting'] },
+    { key: 'rodajes', label: 'Trabajo', color: '#22c55e', types: ['shooting_day'] },
+    { key: 'travel', label: 'Viaje', color: '#8b5cf6', types: ['travel_day'] },
+    { key: 'finanzas', label: 'Finanzas', color: '#d946ef', types: ['finance_due'] },
 ]
 
 // ─── Componente principal ────────────────────────────────────────────────────
 export default function DashboardCalendar() {
-    const { data: events, loading } = useCalendarEvents()
+    const { data: events, loading, remove } = useCalendarEvents()
     const [currentMonth, setCurrentMonth] = useState(new Date())
     const [selectedDay, setSelectedDay] = useState<Date | null>(null)
     const [showPicker, setShowPicker] = useState(false)
@@ -79,7 +81,15 @@ export default function DashboardCalendar() {
 
     const getEventsForDay = (day: Date) =>
         filteredEvents.filter(e => {
-            try { return isSameDay(parseISO(e.event_date_start), day) }
+            try {
+                const start = parseISO(e.event_date_start)
+                const end = e.event_date_end ? parseISO(e.event_date_end) : start
+                // Normalizar a medianoche para comparación robusta
+                const d = new Date(day.getFullYear(), day.getMonth(), day.getDate())
+                const s = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+                const e_date = new Date(end.getFullYear(), end.getMonth(), end.getDate())
+                return d >= s && d <= e_date
+            }
             catch { return false }
         })
 
@@ -319,6 +329,7 @@ export default function DashboardCalendar() {
                     day={selectedDay}
                     events={getEventsForDay(selectedDay)}
                     onClose={() => setSelectedDay(null)}
+                    onRemove={remove}
                 />
             )}
         </div>
@@ -347,7 +358,21 @@ function FilterChip({ active, onClick, color, label }: { active: boolean; onClic
 }
 
 // ── DayEventsModal ────────────────────────────────────────────────────────────
-function DayEventsModal({ day, events, onClose }: { day: Date; events: CalendarEvent[]; onClose: () => void }) {
+function DayEventsModal({ day, events, onClose, onRemove }: { day: Date; events: CalendarEvent[]; onClose: () => void; onRemove: (id: string) => Promise<void> }) {
+    const [deleting, setDeleting] = useState<string | null>(null)
+
+    const handleDelete = async (id: string) => {
+        if (!window.confirm('¿Seguro que quieres eliminar este evento manualmente?')) return
+        setDeleting(id)
+        try {
+            await onRemove(id)
+        } catch (err) {
+            console.error(err)
+            alert('Error al borrar el evento')
+        } finally {
+            setDeleting(null)
+        }
+    }
     return (
         <div
             style={{
@@ -411,7 +436,23 @@ function DayEventsModal({ day, events, onClose }: { day: Date; events: CalendarE
                                                 {cfg.emoji} {cfg.label}
                                             </span>
                                         </div>
-                                        <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>{e.title}</div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                                            <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>{e.title}</div>
+                                            <button 
+                                                onClick={() => handleDelete(e.id)}
+                                                disabled={!!deleting}
+                                                style={{ 
+                                                    background: 'none', border: 'none', padding: '4px', 
+                                                    cursor: 'pointer', color: 'var(--danger)', opacity: 0.6,
+                                                    transition: 'opacity 0.2s'
+                                                }}
+                                                onMouseEnter={el => el.currentTarget.style.opacity = '1'}
+                                                onMouseLeave={el => el.currentTarget.style.opacity = '0.6'}
+                                                title="Eliminar evento"
+                                            >
+                                                <Trash2 size={13} />
+                                            </button>
+                                        </div>
                                         {e.notes && <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>{e.notes}</div>}
 
                                         <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>

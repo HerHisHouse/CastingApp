@@ -5,7 +5,7 @@ import { Proyecto, TipoProyecto, RolActorPublicidad } from '@/lib/supabase'
 import { TIPOS_PROYECTO } from '@/components/ui'
 import { useProyectos } from '@/hooks/useData'
 import AutocompleteInput from '@/components/AutocompleteInput'
-import { Save, Calculator, Euro, Briefcase, CalendarDays, Mic, Info } from 'lucide-react'
+import { Save, Calculator, Euro, Briefcase, CalendarDays, Mic, Info, X } from 'lucide-react'
 
 type ProyectoForm = Omit<Proyecto, 'id' | 'created_at' | 'user_id'>
 
@@ -22,6 +22,9 @@ const defaultForm: ProyectoForm = {
     fecha_inicio: null,
     fecha_fin: null,
     fecha_rodaje: null,
+    prueba_vestuario_fecha: null,
+    travel_ida: null,
+    travel_vuelta: null,
     notas: null,
     // Rodaje económicos
     rol: null,
@@ -114,6 +117,24 @@ function SectionTitle({ color, emoji, title, subtitle }: { color: string, emoji:
         <div style={{ fontSize: '11px', fontWeight: 600, color, marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
             {emoji} {title}
             {subtitle && <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: '10.5px', color: 'var(--text-secondary)', opacity: 0.7 }}>{subtitle}</span>}
+        </div>
+    )
+}
+
+function DateInput({ label, value, onChange }: { label: string, value: string | null, onChange: (v: string | null) => void }) {
+    return (
+        <div className="form-group">
+            <label className="form-label">{label}</label>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input type="date" className="form-input" value={value || ''}
+                    onChange={e => onChange(e.target.value || null)} style={{ flex: 1 }} />
+                {value && (
+                    <button type="button" onClick={() => onChange(null)}
+                        style={{ position: 'absolute', right: '10px', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}>
+                        <X size={14} />
+                    </button>
+                )}
+            </div>
         </div>
     )
 }
@@ -581,7 +602,10 @@ export default function ProyectoFormModal({ open, onClose, onSave, initial }: Pr
                         <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '14px', marginBottom: '14px' }}>
                             <SectionTitle color="#fbbf24" emoji="👗" title="Fitting" subtitle="— 2h incluidas, se cobra por hora las adicionales" />
                             <div className="form-grid">
+                                <DateInput label="Fecha de Fitting" value={form.prueba_vestuario_fecha} onChange={v => set('prueba_vestuario_fecha', v)} />
                                 <NumInput label="Horas de fitting extra" hint="por encima de 2h" value={form.horas_fitting_extra} onChange={v => set('horas_fitting_extra', v)} step={0.5} />
+                            </div>
+                            <div style={{ maxWidth: '50%', marginTop: '8px' }}>
                                 <EuroInput label="Tarifa hora extra" hint="fitting y horas extra convenio" value={form.tarifa_hora_extra}
                                     onChange={v => set('tarifa_hora_extra', v)}
                                     placeholder={form.tarifa_jornada ? (form.tarifa_jornada / 8).toFixed(2) : '0.00'} />
@@ -591,8 +615,12 @@ export default function ProyectoFormModal({ open, onClose, onSave, initial }: Pr
                         {/* Travel Days */}
                         <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '14px', marginBottom: '14px' }}>
                             <SectionTitle color="#60a5fa" emoji="✈️" title="Travel Days" subtitle="— 50% de tarifa jornada por día de viaje" />
-                            <div style={{ maxWidth: '50%' }}>
-                                <NumInput label="Número de travel days" value={form.num_travel_days} onChange={v => set('num_travel_days', v)} />
+                            <div className="form-grid">
+                                <DateInput label="Fecha de Ida" value={form.travel_ida} onChange={v => set('travel_ida', v)} />
+                                <DateInput label="Fecha de Vuelta" value={form.travel_vuelta} onChange={v => set('travel_vuelta', v)} />
+                            </div>
+                            <div style={{ maxWidth: '50%', marginTop: '8px' }}>
+                                <NumInput label="Número de travel days (pago)" value={form.num_travel_days} onChange={v => set('num_travel_days', v)} />
                             </div>
                             {(form.num_travel_days ?? 0) > 0 && (form.tarifa_jornada ?? 0) > 0 && (
                                 <div style={{ fontSize: '12px', color: '#60a5fa', marginTop: '4px' }}>
