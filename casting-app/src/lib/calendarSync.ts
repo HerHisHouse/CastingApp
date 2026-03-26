@@ -21,18 +21,29 @@ export async function syncCastingEvents(casting: Casting, userId: string) {
 
     const events: Omit<CalendarEvent, 'id' | 'created_at'>[] = []
 
-    // 2. Fecha límite (Deadline)
+    // 2. Fecha límite (Deadline) / Casting Presencial
     if (casting.fecha_casting) {
+        const isPresencial = casting.tipo_casting === 'presencial'
+        let title = `Entrega: ${casting.proyecto}`
+        let notes = casting.personaje
+
+        if (isPresencial) {
+            title = `Casting: ${casting.proyecto}`
+            const timeStr = casting.hora_casting ? ` a las ${casting.hora_casting}` : ''
+            const placeStr = casting.localizacion ? ` en ${casting.localizacion}` : ''
+            notes = `${casting.personaje}${timeStr}${placeStr}`
+        }
+
         events.push({
             user_id: userId,
-            title: `Entrega: ${casting.proyecto}`,
+            title: title,
             event_type: 'casting_deadline',
             event_date_start: casting.fecha_casting,
             event_date_end: null,
             related_casting_id: casting.id,
             related_project_id: null,
             related_finance_id: null,
-            notes: casting.personaje
+            notes: notes
         })
     }
 

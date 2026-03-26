@@ -1237,7 +1237,10 @@ tbody tr:last-child td {
     grid-template-columns: 1fr;
   }
 
-  .stat-grid,
+  .stat-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
   .grid-2 {
     grid-template-columns: 1fr;
   }

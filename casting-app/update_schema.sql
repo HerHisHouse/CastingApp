@@ -42,6 +42,7 @@ ALTER TABLE castings ADD COLUMN IF NOT EXISTS tarifa_neta_jornada NUMERIC(10,2);
 ALTER TABLE castings ADD COLUMN IF NOT EXISTS tarifa_traslado NUMERIC(10,2);
 ALTER TABLE castings ADD COLUMN IF NOT EXISTS num_takes INTEGER;
 ALTER TABLE castings ADD COLUMN IF NOT EXISTS nombre_agencia TEXT;
+ALTER TABLE castings ADD COLUMN IF NOT EXISTS hora_casting TEXT;
 
 -- 2. Actualizar o Añadir columnas a 'proyectos'
 ALTER TABLE proyectos ADD COLUMN IF NOT EXISTS fecha_inicio DATE;

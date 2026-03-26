@@ -114,6 +114,7 @@ export interface Casting {
   tarifa_neta_jornada: number | null
   tarifa_traslado: number | null
   num_takes: number | null
+  hora_casting: string | null     // Nueva: Hora para castings presenciales
 }
 
 export type RolActorPublicidad = 'ocp' | 'secundario' | 'fe'

@@ -40,6 +40,7 @@ const defaultForm: CastingForm = {
     travel_vuelta: null,
     fecha_inicio: null,
     fecha_fin: null,
+    hora_casting: null,
 }
 
 interface Props {
@@ -171,6 +172,7 @@ export default function CastingFormModal({ open, onClose, onSave, initial }: Pro
     const productoras = useMemo(() => [...new Set(allCastings.map(c => c.productora).filter((n): n is string => !!n?.trim()))].sort(), [allCastings])
     const plataformas = useMemo(() => [...new Set(allCastings.map(c => c.plataforma_cliente).filter((n): n is string => !!n?.trim()))].sort(), [allCastings])
     const agencias = useMemo(() => [...new Set(allCastings.map(c => c.nombre_agencia).filter((n): n is string => !!n?.trim()))].sort(), [allCastings])
+    const localizaciones = useMemo(() => [...new Set(allCastings.map(c => c.localizacion).filter((n): n is string => !!n?.trim()))].sort(), [allCastings])
 
     const toggleOpcionado = () => setForm(prev => ({
         ...prev, fue_opcionado: !prev.fue_opcionado,
@@ -349,14 +351,38 @@ export default function CastingFormModal({ open, onClose, onSave, initial }: Pro
                 </div>
                 <div className="form-group">
                     <label className="form-label">Formato</label>
-                    <select className="form-select" value={form.tipo_casting} onChange={e => set('tipo_casting', e.target.value as TipoCasting)}>
+                    <select className="form-select" value={form.tipo_casting} onChange={e => {
+                        const val = e.target.value as TipoCasting
+                        set('tipo_casting', val)
+                        if (val !== 'presencial') {
+                             set('hora_casting', null)
+                        }
+                    }}>
                         {TIPOS_CASTING.map(([val, label]) => <option key={val} value={val}>{label}</option>)}
                     </select>
                 </div>
                 <div className="form-group">
-                    <DateInput label="📅 Fecha máx. de entrega *" value={form.fecha_casting} onChange={v => set('fecha_casting', v || '')} />
+                    <DateInput 
+                        label={form.tipo_casting === 'presencial' ? "📅 FECHA *" : "📅 Fecha máx. de entrega *"} 
+                        value={form.fecha_casting} 
+                        onChange={v => set('fecha_casting', v || '')} 
+                    />
                 </div>
             </div>
+
+            {form.tipo_casting === 'presencial' && (
+                <div className="form-grid" style={{ background: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '12px', padding: '14px', marginBottom: '20px' }}>
+                    <div className="form-group">
+                        <label className="form-label">⌚ HORA</label>
+                        <input type="time" className="form-input" value={form.hora_casting || ''} onChange={e => set('hora_casting', e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">📍 LUGAR</label>
+                        <input className="form-input" list="lugares-list" value={form.localizacion || ''} onChange={e => set('localizacion', e.target.value)} placeholder="Dirección, estudio…" autoComplete="off" />
+                        <datalist id="lugares-list">{localizaciones.map(n => <option key={n} value={n} />)}</datalist>
+                    </div>
+                </div>
+            )}
 
             <div className="form-grid">
                 <div className="form-group">
