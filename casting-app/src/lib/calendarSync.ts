@@ -187,6 +187,12 @@ export async function syncFinanceEvents(finanza: Finanza, userId: string) {
     await supabase.from('calendar_events').delete().eq('related_finance_id', finanza.id)
 
     if (finanza.fecha_limite_cobro) {
+        const labels: Record<string, string> = {
+            nomina: 'Nómina', derechos_imagen: 'Derechos de Imagen',
+            buyout: 'Buyout', royalties: 'Royalties', callback: 'Callback'
+        }
+        const tipoLabel = labels[finanza.tipo_ingreso] || finanza.tipo_ingreso
+
         const { error } = await supabase.from('calendar_events').insert({
             user_id: userId,
             title: `Cobro: ${finanza.proyecto_nombre}`,
@@ -196,7 +202,7 @@ export async function syncFinanceEvents(finanza: Finanza, userId: string) {
             related_casting_id: null,
             related_project_id: null,
             related_finance_id: finanza.id,
-            notes: null
+            notes: `Tipo: ${tipoLabel}`
         } as any)
         if (error) console.error('Error syncing finance events:', error)
     }

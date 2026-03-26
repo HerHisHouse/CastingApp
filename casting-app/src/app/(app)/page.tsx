@@ -115,6 +115,7 @@ export default function DashboardPage() {
         color: 'var(--text-primary)',
         fontSize: '12px',
     }
+    const customItemStyle = { color: 'var(--text-primary)' }
 
     return (
         <>
@@ -183,7 +184,7 @@ export default function DashboardPage() {
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#8888aa', fontSize: 11 }} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8888aa', fontSize: 11 }} allowDecimals={false} />
-                                <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                                <Tooltip contentStyle={customTooltipStyle} itemStyle={customItemStyle} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
                                 <Bar dataKey="castings" fill="#7c6af7" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
@@ -202,7 +203,7 @@ export default function DashboardPage() {
                                     <Pie data={castingsByTipo} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={3} dataKey="value">
                                         {castingsByTipo.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                                     </Pie>
-                                    <Tooltip contentStyle={customTooltipStyle} />
+                                    <Tooltip contentStyle={customTooltipStyle} itemStyle={customItemStyle} />
                                 </PieChart>
                             </ResponsiveContainer>
                         )}
