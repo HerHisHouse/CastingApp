@@ -1,7 +1,7 @@
 import { Casting, TipoProyecto, TipoCasting, EstadoCasting, FuenteCasting } from '@/lib/supabase'
 
 const estadoLabels: Record<EstadoCasting, string> = {
-    pendiente: 'Pendiente envío', enviado: 'En proceso',
+    pendiente: 'Pendiente envío', no_aplicado: 'No aplicado', enviado: 'En proceso',
     callback: 'Callback', opcionado: 'Opcionado',
     seleccionado: 'Seleccionado', descartado: 'Descartado'
 }
