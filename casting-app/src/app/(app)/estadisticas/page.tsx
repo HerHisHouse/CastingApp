@@ -48,8 +48,8 @@ export default function EstadisticasPage() {
     // Datos del funnel de progresión
     const funnelData = useMemo(() => {
         const total = castings.length
-        const noEnviados = castings.filter(c => c.estado === 'pendiente').length
-        const enviados = castings.filter(c => c.estado !== 'pendiente').length
+        const noAplicado = castings.filter(c => c.estado === 'no_aplicado').length
+        const enviados = castings.filter(c => c.estado !== 'pendiente' && c.estado !== 'no_aplicado').length
         const opcionados = castings.filter(c => c.fue_opcionado).length
         const conCallback = castings.filter(c => c.tuvo_callback).length
         const seleccionados = castings.filter(c => c.estado === 'seleccionado').length
@@ -58,7 +58,7 @@ export default function EstadisticasPage() {
         const selSinCallback = castings.filter(c => c.estado === 'seleccionado' && !c.tuvo_callback).length
         const selConCallback = castings.filter(c => c.estado === 'seleccionado' && c.tuvo_callback).length
 
-        return { total, noEnviados, enviados, opcionados, conCallback, seleccionados, descartados, selSinCallback, selConCallback }
+        return { total, noAplicado, enviados, opcionados, conCallback, seleccionados, descartados, selSinCallback, selConCallback }
     }, [castings])
 
     // Ratios corregidos con los hitos
@@ -171,7 +171,7 @@ export default function EstadisticasPage() {
                         <div style={{ display: 'flex', alignItems: 'stretch', gap: '3px', overflowX: 'auto', paddingBottom: '10px' }}>
                             {[
                                 { label: 'Recibidos', count: funnelData.total, color: 'var(--text-secondary)', pct: 100 },
-                                { label: 'No enviados', count: funnelData.noEnviados, color: '#94a3b8', pct: funnelData.total ? (funnelData.noEnviados / funnelData.total * 100) : 0 },
+                                { label: 'No aplicado', count: funnelData.noAplicado, color: '#94a3b8', pct: funnelData.total ? (funnelData.noAplicado / funnelData.total * 100) : 0 },
                                 { label: 'Enviados', count: funnelData.enviados, color: '#7c6af7', pct: funnelData.total ? (funnelData.enviados / funnelData.total * 100) : 0 },
                                 { label: 'Opcionados', count: funnelData.opcionados, color: '#f97316', pct: funnelData.total ? (funnelData.opcionados / funnelData.total * 100) : 0 },
                                 { label: 'Callback', count: funnelData.conCallback, color: '#fbbf24', pct: funnelData.total ? (funnelData.conCallback / funnelData.total * 100) : 0 },

@@ -39,7 +39,7 @@ export type Database = {
 
 export type TipoProyecto = 'serie' | 'cine' | 'publicidad' | 'teatro' | 'doblaje' | 'tv' | 'evento'
 export type TipoCasting = 'self_tape' | 'presencial' | 'callback_presencial' | 'callback_zoom'
-export type EstadoCasting = 'pendiente' | 'enviado' | 'callback' | 'opcionado' | 'seleccionado' | 'descartado'
+export type EstadoCasting = 'pendiente' | 'no_aplicado' | 'enviado' | 'callback' | 'opcionado' | 'seleccionado' | 'descartado'
 export type FuenteCasting = 'representante' | 'director_casting' | 'autocasting' | 'contacto' | 'agencia'
 export type TipoIngreso = 'nomina' | 'derechos_imagen' | 'buyout' | 'royalties' | 'callback'
 export type EstadoPago = 'pendiente' | 'pagado' | 'parcial'

@@ -79,7 +79,7 @@ ALTER TABLE castings ADD CONSTRAINT castings_tipo_casting_check
 
 ALTER TABLE castings DROP CONSTRAINT IF EXISTS castings_estado_check;
 ALTER TABLE castings ADD CONSTRAINT castings_estado_check 
-    CHECK (estado IN ('pendiente','enviado','callback','opcionado','seleccionado','descartado'));
+    CHECK (estado IN ('pendiente','no_aplicado','enviado','callback','opcionado','seleccionado','descartado'));
 
 ALTER TABLE castings DROP CONSTRAINT IF EXISTS castings_fuente_casting_check;
 ALTER TABLE castings ADD CONSTRAINT castings_fuente_casting_check 

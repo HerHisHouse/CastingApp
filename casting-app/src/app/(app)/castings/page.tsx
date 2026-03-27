@@ -22,7 +22,8 @@ const ESTADOS_OPCIONES: { val: EstadoCasting; label: string; color: string }[] =
 
 const estadoFilters = [
     { val: '', label: 'Todos' },
-    { val: 'pendiente', label: 'No enviados' },
+    { val: 'pendiente', label: 'Pendiente envío' },
+    { val: 'no_aplicado', label: 'No aplicado' },
     { val: 'en_proceso', label: 'En proceso' },
     { val: 'opcionado', label: 'Opcionados', color: '#f97316' },
     { val: 'callback', label: 'Con Callback' },
@@ -92,9 +93,9 @@ function CastingProgresionDropdown({ casting, onUpdate }: { casting: Casting, on
                 }}>
                     <div style={{ padding: '4px 8px', fontSize: '9px', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>Hitos del Proceso</div>
                     
-                    <MilestoneItem label="Enviado" done={casting.estado !== 'pendiente'} color="var(--info)" onClick={() => onUpdate(casting.id, { estado: casting.estado === 'pendiente' ? 'enviado' : 'pendiente' })} isAction />
+                    <MilestoneItem label="Enviado" done={casting.estado !== 'pendiente' && casting.estado !== 'no_aplicado'} color="var(--info)" onClick={() => onUpdate(casting.id, { estado: 'enviado' })} isAction />
                     
-                    <MilestoneItem label="No enviado" done={casting.estado === 'pendiente'} color="var(--text-secondary)" onClick={() => onUpdate(casting.id, { estado: 'pendiente' })} isAction />
+                    <MilestoneItem label="No aplicado" done={casting.estado === 'no_aplicado'} color="var(--text-secondary)" onClick={() => onUpdate(casting.id, { estado: 'no_aplicado' })} isAction />
 
                     <MilestoneItem 
                         label="Opcionado" 
@@ -416,19 +417,19 @@ export default function CastingsPage() {
                 <div className="stat-grid mb-6">
                     {[
                         { val: 'total', label: 'Recibidos', color: '#9d8fff', count: data.length },
-                        { val: 'enviados', label: 'Enviados', color: 'var(--info)', count: data.filter(c => c.estado !== 'pendiente').length },
-                        { val: 'no_enviado', label: 'No enviados', color: 'var(--text-secondary)', count: data.filter(c => c.estado === 'pendiente').length },
+                        { val: 'enviados', label: 'Enviados', color: 'var(--info)', count: data.filter(c => c.estado !== 'pendiente' && c.estado !== 'no_aplicado').length },
+                        { val: 'no_aplicado', label: 'No aplicado', color: 'var(--text-secondary)', count: data.filter(c => c.estado === 'no_aplicado').length },
                         { val: 'opcionado', label: 'Opcionados', color: '#f97316', count: data.filter(c => c.fue_opcionado).length },
                         { val: 'callback', label: 'Callbacks', color: 'var(--warning)', count: data.filter(c => c.tuvo_callback).length },
                         { val: 'seleccionado', label: 'Selecc.', color: 'var(--success)', count: data.filter(c => c.estado === 'seleccionado').length },
                     ].map(({ val, label, color, count }) => (
                         <div
                             key={val}
-                            className={`stat-card cursor-pointer ${estadoFilter === (val === 'total' ? '' : val === 'no_enviado' ? 'pendiente' : val === 'enviados' ? 'en_proceso' : val) ? 'active' : ''}`}
-                            onClick={() => setEstadoFilter(val === 'total' ? '' : val === 'no_enviado' ? 'pendiente' : val === 'enviados' ? 'en_proceso' : val)}
+                            className={`stat-card cursor-pointer ${estadoFilter === (val === 'total' ? '' : val === 'enviados' ? 'en_proceso' : val) ? 'active' : ''}`}
+                            onClick={() => setEstadoFilter(val === 'total' ? '' : val === 'enviados' ? 'en_proceso' : val)}
                             style={{
                                 borderLeft: `3px solid ${color}`,
-                                background: (estadoFilter === (val === 'total' ? '' : val === 'no_enviado' ? 'pendiente' : val === 'enviados' ? 'en_proceso' : val)) ? 'rgba(255,255,255,0.04)' : 'var(--bg-card)'
+                                background: (estadoFilter === (val === 'total' ? '' : val === 'enviados' ? 'en_proceso' : val)) ? 'rgba(255,255,255,0.04)' : 'var(--bg-card)'
                             }}
                         >
                             <div className="stat-value" style={{ color, fontSize: '20px' }}>{count}</div>
