@@ -9,7 +9,8 @@ import {
 import { Casting, EstadoCasting } from '@/lib/supabase'
 import {
     Film, Plus, Search, Pencil, Trash2,
-    Clapperboard, ChevronDown, CheckCircle2, Circle, Bell, X
+    Clapperboard, ChevronDown, CheckCircle2, Circle, Bell, X,
+    Eye, EyeOff
 } from 'lucide-react'
 
 const ESTADOS_OPCIONES: { val: EstadoCasting; label: string; color: string }[] = [
@@ -226,6 +227,96 @@ function EstadoBadgeInline({
     )
 }
 
+function CastingMobileCard({ 
+    casting, 
+    onEdit, 
+    onDelete, 
+    onUpdate,
+    onConvertToProject,
+    converting
+}: { 
+    casting: Casting, 
+    onEdit: (c: Casting) => void, 
+    onDelete: (id: string) => void,
+    onUpdate: (id: string, data: Partial<Casting>) => Promise<void>,
+    onConvertToProject: (c: Casting) => Promise<void>,
+    converting: string | null
+}) {
+    const [showMore, setShowMore] = useState(false)
+
+    return (
+        <div className="card" style={{ padding: '16px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <BadgeTipoProyecto tipo={casting.tipo_proyecto} />
+                    <EstadoBadgeInline casting={casting} onUpdate={async (id, est) => { await onUpdate(id, { estado: est }) }} />
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="btn btn-icon btn-ghost" onClick={() => onEdit(casting)}><Pencil size={14} /></button>
+                    <button className="btn btn-icon btn-ghost" style={{ color: 'var(--danger)' }} onClick={() => onDelete(casting.id)}><Trash2 size={14} /></button>
+                </div>
+            </div>
+
+            <div style={{ marginBottom: '12px' }}>
+                <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary)' }}>{casting.proyecto}</div>
+                <div style={{ fontSize: '13px', color: 'var(--accent-light)', fontWeight: 500 }}>{casting.personaje}</div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>
+                        {casting.tipo_casting === 'presencial' ? 'Fecha Casting:' : 'Entrega Máx:'}
+                    </span>
+                    <DeadlineBadge date={casting.fecha_casting} />
+                </div>
+                
+                {casting.localizacion && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Localización:</span>
+                        <span style={{ color: 'var(--text-primary)' }}>📍 {casting.localizacion}</span>
+                    </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Progresión:</span>
+                    <CastingProgresionDropdown casting={casting} onUpdate={onUpdate} />
+                </div>
+            </div>
+
+            {showMore && (
+                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', animation: 'fadeIn 0.2s' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Director Casting:</span>
+                        <span style={{ color: 'var(--text-primary)' }}>{casting.director_casting || '—'}</span>
+                    </div>
+                </div>
+            )}
+
+            <div style={{ marginTop: '16px', display: 'flex', gap: '8px' }}>
+                <button 
+                    className="btn btn-secondary btn-sm" 
+                    style={{ flex: 1, justifyContent: 'center' }}
+                    onClick={() => setShowMore(!showMore)}
+                >
+                    {showMore ? <EyeOff size={14} /> : <Eye size={14} />}
+                    {showMore ? 'Ver menos' : 'Ver más'}
+                </button>
+                
+                {casting.estado === 'seleccionado' && (
+                    <button 
+                        className="btn btn-primary btn-sm" 
+                        style={{ flex: 1, justifyContent: 'center', background: 'var(--success)', borderColor: 'var(--success)' }}
+                        onClick={() => onConvertToProject(casting)}
+                        disabled={converting === casting.id}
+                    >
+                        <Clapperboard size={14} /> {converting === casting.id ? '…' : 'A Proyecto'}
+                    </button>
+                )}
+            </div>
+        </div>
+    )
+}
+
 export default function CastingsPage() {
     const { data, loading, create, update, remove } = useCastings()
     const { create: createProyecto } = useProyectos()
@@ -366,54 +457,72 @@ export default function CastingsPage() {
                     </div>
                 </div>
 
-                <div className="card" style={{ padding: 0 }}>
+                <div className="card" style={{ padding: 0, background: 'transparent', border: 'none' }}>
                     {loading ? <LoadingSkeleton /> : filtered.length === 0 ? (
                         <EmptyState icon={<Film size={48} />} title="No hay castings" description="Registra tu primer casting para empezar." action={<button className="btn btn-primary" onClick={openNew}><Plus size={14} />Nuevo Casting</button>} />
                     ) : (
-                        <div className="table-wrapper">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Proyecto / Personaje</th>
-                                        <th>Tipo / Localiz.</th>
-                                        <th>Entrega Máx.</th>
-                                        <th>Director Casting</th>
-                                        <th>Progresión</th>
-                                        <th>Estado</th>
-                                        <th style={{ textAlign: 'right' }}>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filtered.map(c => (
-                                        <tr key={c.id}>
-                                            <td>
-                                                <div style={{ fontWeight: 600 }}>{c.proyecto}</div>
-                                                <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Pe: {c.personaje}</div>
-                                            </td>
-                                            <td>
-                                                <BadgeTipoProyecto tipo={c.tipo_proyecto} />
-                                                {c.localizacion && <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>📍 {c.localizacion}</div>}
-                                            </td>
-                                            <td><DeadlineBadge date={c.fecha_casting} /></td>
-                                            <td style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{c.director_casting || '—'}</td>
-                                            <td><CastingProgresionDropdown casting={c} onUpdate={update} /></td>
-                                            <td><EstadoBadgeInline casting={c} onUpdate={handleEstadoUpdate} /></td>
-                                            <td>
-                                                <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
-                                                    {c.estado === 'seleccionado' && (
-                                                        <button className="btn btn-sm" style={{ fontSize: '11px', background: 'var(--success-dim)', color: 'var(--success)', borderColor: 'rgba(52,211,153,0.3)' }} onClick={() => handleConvertToProject(c)} disabled={converting === c.id}>
-                                                            <Clapperboard size={11} /> {converting === c.id ? '…' : 'Proyecto'}
-                                                        </button>
-                                                    )}
-                                                    <button className="btn btn-icon btn-ghost" onClick={() => openEdit(c)}><Pencil size={13} /></button>
-                                                    <button className="btn btn-icon btn-ghost" style={{ color: 'var(--danger)' }} onClick={() => setDeleteConfirm(c.id)}><Trash2 size={13} /></button>
-                                                </div>
-                                            </td>
+                        <>
+                            {/* Desktop View */}
+                            <div className="table-wrapper desktop-only" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px' }}>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Proyecto / Personaje</th>
+                                            <th>Tipo / Localiz.</th>
+                                            <th>Entrega Máx. / Fecha</th>
+                                            <th>Director Casting</th>
+                                            <th>Progresión</th>
+                                            <th>Estado</th>
+                                            <th style={{ textAlign: 'right' }}>Acciones</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody>
+                                        {filtered.map(c => (
+                                            <tr key={c.id}>
+                                                <td>
+                                                    <div style={{ fontWeight: 600 }}>{c.proyecto}</div>
+                                                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Pe: {c.personaje}</div>
+                                                </td>
+                                                <td>
+                                                    <BadgeTipoProyecto tipo={c.tipo_proyecto} />
+                                                    {c.localizacion && <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>📍 {c.localizacion}</div>}
+                                                </td>
+                                                <td><DeadlineBadge date={c.fecha_casting} /></td>
+                                                <td style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{c.director_casting || '—'}</td>
+                                                <td><CastingProgresionDropdown casting={c} onUpdate={update} /></td>
+                                                <td><EstadoBadgeInline casting={c} onUpdate={handleEstadoUpdate} /></td>
+                                                <td>
+                                                    <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                                                        {c.estado === 'seleccionado' && (
+                                                            <button className="btn btn-sm" style={{ fontSize: '11px', background: 'var(--success-dim)', color: 'var(--success)', borderColor: 'rgba(52,211,153,0.3)' }} onClick={() => handleConvertToProject(c)} disabled={converting === c.id}>
+                                                                <Clapperboard size={11} /> {converting === c.id ? '…' : 'Proyecto'}
+                                                            </button>
+                                                        )}
+                                                        <button className="btn btn-icon btn-ghost" onClick={() => openEdit(c)}><Pencil size={13} /></button>
+                                                        <button className="btn btn-icon btn-ghost" style={{ color: 'var(--danger)' }} onClick={() => setDeleteConfirm(c.id)}><Trash2 size={13} /></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Mobile View */}
+                            <div className="mobile-only">
+                                {filtered.map(c => (
+                                    <CastingMobileCard 
+                                        key={c.id} 
+                                        casting={c} 
+                                        onEdit={openEdit} 
+                                        onDelete={setDeleteConfirm} 
+                                        onUpdate={update}
+                                        onConvertToProject={handleConvertToProject}
+                                        converting={converting}
+                                    />
+                                ))}
+                            </div>
+                        </>
                     )}
                 </div>
             </div>
