@@ -12,10 +12,15 @@ import { BarChart3, Target, TrendingUp, Users } from 'lucide-react'
 const COLORS = ['#7c6af7', '#34d399', '#f97316', '#f87171', '#60a5fa', '#a78bfa']
 
 const customTooltipStyle = {
-    background: '#16161f',
-    border: '1px solid #3a3a4a',
+    background: 'var(--bg-card)',
+    border: '1px solid var(--border)',
     borderRadius: '8px',
-    color: '#f0f0f8',
+    color: 'var(--text-primary)',
+    fontSize: '12px',
+}
+
+const customItemStyle = { 
+    color: 'var(--text-primary)',
     fontSize: '12px',
 }
 
@@ -43,6 +48,7 @@ export default function EstadisticasPage() {
     // Datos del funnel de progresión
     const funnelData = useMemo(() => {
         const total = castings.length
+        const noEnviados = castings.filter(c => c.estado === 'pendiente').length
         const enviados = castings.filter(c => c.estado !== 'pendiente').length
         const opcionados = castings.filter(c => c.fue_opcionado).length
         const conCallback = castings.filter(c => c.tuvo_callback).length
@@ -52,7 +58,7 @@ export default function EstadisticasPage() {
         const selSinCallback = castings.filter(c => c.estado === 'seleccionado' && !c.tuvo_callback).length
         const selConCallback = castings.filter(c => c.estado === 'seleccionado' && c.tuvo_callback).length
 
-        return { total, enviados, opcionados, conCallback, seleccionados, descartados, selSinCallback, selConCallback }
+        return { total, noEnviados, enviados, opcionados, conCallback, seleccionados, descartados, selSinCallback, selConCallback }
     }, [castings])
 
     // Ratios corregidos con los hitos
@@ -162,28 +168,29 @@ export default function EstadisticasPage() {
                     {castings.length === 0 ? (
                         <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '20px', fontSize: '13px' }}>Sin datos todavía</div>
                     ) : (
-                        <div style={{ display: 'flex', alignItems: 'stretch', gap: '3px' }}>
+                        <div style={{ display: 'flex', alignItems: 'stretch', gap: '3px', overflowX: 'auto', paddingBottom: '10px' }}>
                             {[
                                 { label: 'Recibidos', count: funnelData.total, color: 'var(--text-secondary)', pct: 100 },
+                                { label: 'No enviados', count: funnelData.noEnviados, color: '#94a3b8', pct: funnelData.total ? (funnelData.noEnviados / funnelData.total * 100) : 0 },
                                 { label: 'Enviados', count: funnelData.enviados, color: '#7c6af7', pct: funnelData.total ? (funnelData.enviados / funnelData.total * 100) : 0 },
                                 { label: 'Opcionados', count: funnelData.opcionados, color: '#f97316', pct: funnelData.total ? (funnelData.opcionados / funnelData.total * 100) : 0 },
                                 { label: 'Callback', count: funnelData.conCallback, color: '#fbbf24', pct: funnelData.total ? (funnelData.conCallback / funnelData.total * 100) : 0 },
                                 { label: 'Elegido', count: funnelData.seleccionados, color: '#34d399', pct: funnelData.total ? (funnelData.seleccionados / funnelData.total * 100) : 0 },
                             ].map(({ label, count, color, pct }, i) => (
-                                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                <div key={i} style={{ flex: '1 0 60px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                                     <div style={{
                                         width: '100%',
                                         height: `${Math.max(pct, 4)}px`,
-                                        maxHeight: '80px',
+                                        maxHeight: '100px',
                                         minHeight: '12px',
                                         background: color,
-                                        borderRadius: i === 0 ? '8px 0 0 8px' : i === 4 ? '0 8px 8px 0' : '0',
+                                        borderRadius: i === 0 ? '8px 0 0 8px' : i === 5 ? '0 8px 8px 0' : '0',
                                         opacity: 0.85,
                                         transition: 'height 0.4s ease',
                                     }} />
-                                    <div style={{ fontSize: '22px', fontWeight: 800, color, letterSpacing: '-1px' }}>{count}</div>
-                                    <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'center' }}>{label}</div>
-                                    <div style={{ fontSize: '11px', color, opacity: 0.8 }}>{pct.toFixed(1)}%</div>
+                                    <div style={{ fontSize: '18px', fontWeight: 800, color, letterSpacing: '-1px' }}>{count}</div>
+                                    <div style={{ fontSize: '9px', fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'center', height: '20px', display: 'flex', alignItems: 'center' }}>{label}</div>
+                                    <div style={{ fontSize: '9px', color, opacity: 0.8 }}>{pct.toFixed(0)}%</div>
                                 </div>
                             ))}
                         </div>
@@ -258,7 +265,7 @@ export default function EstadisticasPage() {
                                         <Pie data={byTipoProyecto} cx="50%" cy="50%" innerRadius={45} outerRadius={72} paddingAngle={3} dataKey="value">
                                             {byTipoProyecto.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                                         </Pie>
-                                        <Tooltip contentStyle={customTooltipStyle} />
+                                        <Tooltip contentStyle={customTooltipStyle} itemStyle={customItemStyle} />
                                     </PieChart>
                                 </ResponsiveContainer>
                                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -285,7 +292,7 @@ export default function EstadisticasPage() {
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
                                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#8888aa', fontSize: 10 }} />
                                     <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8888aa', fontSize: 11 }} allowDecimals={false} />
-                                    <Tooltip contentStyle={customTooltipStyle} />
+                                    <Tooltip contentStyle={customTooltipStyle} itemStyle={customItemStyle} />
                                     <Bar dataKey="value" name="Castings" radius={[4, 4, 0, 0]}>
                                         {byFuente.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                                     </Bar>
@@ -309,7 +316,7 @@ export default function EstadisticasPage() {
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
                                 <XAxis dataKey="director" axisLine={false} tickLine={false} tick={{ fill: '#8888aa', fontSize: 10 }} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8888aa', fontSize: 11 }} allowDecimals={false} />
-                                <Tooltip contentStyle={customTooltipStyle} />
+                                <Tooltip contentStyle={customTooltipStyle} itemStyle={customItemStyle} />
                                 <Legend wrapperStyle={{ fontSize: '11px', color: '#8888aa' }} />
                                 <Bar dataKey="total" name="Total Castings" fill="#7c6af7" radius={[3, 3, 0, 0]} />
                                 <Bar dataKey="opcionados" name="Opcionados" fill="#f97316" radius={[3, 3, 0, 0]} />

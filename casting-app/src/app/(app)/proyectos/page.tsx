@@ -4,7 +4,7 @@ import { useProyectos, useFinanzas } from '@/hooks/useData'
 import ProyectoFormModal from '@/components/ProyectoFormModal'
 import { BadgeTipoProyecto, formatDate, formatCurrency, LoadingSkeleton, EmptyState } from '@/components/ui'
 import { Proyecto } from '@/lib/supabase'
-import { Clapperboard, Plus, Search, Pencil, Trash2, Calendar, Euro, BadgeCheck } from 'lucide-react'
+import { Clapperboard, Plus, Search, Pencil, Trash2, Calendar, Euro, BadgeCheck, ChevronDown, ChevronRight } from 'lucide-react'
 
 const ROL_LABELS: Record<string, string> = {
     ocp: 'OCP — Principal',
@@ -159,6 +159,28 @@ export default function ProyectosPage() {
     const openEdit = (p: Proyecto) => { setEditing(p); setModalOpen(true) }
     const openNew = () => { setEditing(null); setModalOpen(true) }
 
+    const groupedByYear = useMemo(() => {
+        const groups: Record<string, Proyecto[]> = {}
+        filtered.forEach(p => {
+            const date = p.fecha_inicio || p.created_at
+            const year = new Date(date).getFullYear().toString()
+            if (!groups[year]) groups[year] = []
+            groups[year].push(p)
+        })
+        return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]))
+    }, [filtered])
+
+    const [expandedYears, setExpandedYears] = useState<Record<string, boolean>>(() => {
+        const initial: Record<string, boolean> = {}
+        const currentYear = new Date().getFullYear().toString()
+        initial[currentYear] = true
+        return initial
+    })
+
+    const toggleYear = (year: string) => {
+        setExpandedYears(prev => ({ ...prev, [year]: !prev[year] }))
+    }
+
     return (
         <>
             <div className="page-header">
@@ -193,142 +215,169 @@ export default function ProyectosPage() {
                         action={<button className="btn btn-primary" onClick={openNew}><Plus size={14} />Nuevo Proyecto</button>}
                     />
                 ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
-                        {filtered.map(p => {
-                            const { totalNomina, derechosNeto, total } = calcTotales(p)
-                            const hasEconomia = totalNomina > 0 || derechosNeto > 0
+                    <div>
+                        {groupedByYear.map(([year, yearProjects]) => (
+                            <div key={year} style={{ marginBottom: '24px' }}>
+                                <button
+                                    onClick={() => toggleYear(year)}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: '8px', 
+                                        width: '100%', padding: '12px 16px', marginBottom: '16px',
+                                        background: 'var(--bg-card)', border: '1px solid var(--border)',
+                                        borderRadius: '12px', cursor: 'pointer', textAlign: 'left',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    {expandedYears[year] ? <ChevronDown size={18} color="var(--accent-light)" /> : <ChevronRight size={18} color="var(--text-secondary)" />}
+                                    <span style={{ fontSize: '18px', fontWeight: 700, color: expandedYears[year] ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                                        {year}
+                                    </span>
+                                    <span style={{ fontSize: '12px', background: 'var(--border)', padding: '2px 8px', borderRadius: '10px', color: 'var(--text-secondary)', marginLeft: '4px' }}>
+                                        {yearProjects.length}
+                                    </span>
+                                </button>
 
-                            return (
-                                <div key={p.id} className="card" style={{ position: 'relative' }}>
-                                    {/* Header */}
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                                            <BadgeTipoProyecto tipo={p.tipo_proyecto} />
-                                            {p.rol && (
-                                                <span style={{
-                                                    fontSize: '10px', fontWeight: 700, padding: '2px 7px',
-                                                    borderRadius: '99px', background: `${ROL_COLORS[p.rol]}18`,
-                                                    color: ROL_COLORS[p.rol], border: `1px solid ${ROL_COLORS[p.rol]}30`,
-                                                    letterSpacing: '0.3px'
-                                                }}>
-                                                    {p.rol.toUpperCase()}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div style={{ display: 'flex', gap: '4px' }}>
-                                            <button className="btn btn-icon btn-ghost" onClick={() => openEdit(p)} title="Editar">
-                                                <Pencil size={13} />
-                                            </button>
-                                            <button
-                                                className="btn btn-icon btn-ghost"
-                                                style={{ color: 'var(--danger)' }}
-                                                onClick={() => setDeleteConfirm(p.id)}
-                                            >
-                                                <Trash2 size={13} />
-                                            </button>
-                                        </div>
-                                    </div>
+                                {expandedYears[year] && (
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px', animation: 'fadeIn 0.3s ease-out' }}>
+                                        {yearProjects.map(p => {
+                                            const { totalNomina, derechosNeto, total } = calcTotales(p)
+                                            const hasEconomia = totalNomina > 0 || derechosNeto > 0
 
-                                    <h3 style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary)', marginBottom: '4px' }}>
-                                        {p.proyecto}
-                                    </h3>
-                                    <p style={{ color: 'var(--accent-light)', fontSize: '13px', fontWeight: 500, marginBottom: '10px' }}>
-                                        {p.personaje}
-                                    </p>
+                                            return (
+                                                <div key={p.id} className="card" style={{ position: 'relative' }}>
+                                                    {/* Header */}
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                                                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                                            <BadgeTipoProyecto tipo={p.tipo_proyecto} />
+                                                            {p.rol && (
+                                                                <span style={{
+                                                                    fontSize: '10px', fontWeight: 700, padding: '2px 7px',
+                                                                    borderRadius: '99px', background: `${ROL_COLORS[p.rol]}18`,
+                                                                    color: ROL_COLORS[p.rol], border: `1px solid ${ROL_COLORS[p.rol]}30`,
+                                                                    letterSpacing: '0.3px'
+                                                                }}>
+                                                                    {p.rol.toUpperCase()}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                                            <button className="btn btn-icon btn-ghost" onClick={() => openEdit(p)} title="Editar">
+                                                                <Pencil size={13} />
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-icon btn-ghost"
+                                                                style={{ color: 'var(--danger)' }}
+                                                                onClick={() => setDeleteConfirm(p.id)}
+                                                            >
+                                                                <Trash2 size={13} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
 
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                        {p.empresa && (
-                                            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', display: 'flex', gap: '6px' }}>
-                                                <span style={{ opacity: 0.6 }}>Empresa:</span>
-                                                <span style={{ color: 'var(--text-primary)' }}>{p.empresa}</span>
-                                            </div>
-                                        )}
-                                        {p.estudio_doblaje && (
-                                            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', display: 'flex', gap: '6px' }}>
-                                                <span style={{ opacity: 0.6 }}>Estudio:</span>
-                                                <span style={{ color: 'var(--text-primary)' }}>{p.estudio_doblaje}</span>
-                                            </div>
-                                        )}
-                                        {p.num_takes != null && p.tipo_proyecto === 'doblaje' && (
-                                            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', display: 'flex', gap: '6px' }}>
-                                                <span style={{ opacity: 0.6 }}>Takes:</span>
-                                                <span style={{ color: 'var(--text-primary)' }}>{p.num_takes}</span>
-                                            </div>
-                                        )}
-                                        {p.productora && (
-                                            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', display: 'flex', gap: '6px' }}>
-                                                <span style={{ opacity: 0.6 }}>Productora:</span>
-                                                <span style={{ color: 'var(--text-primary)' }}>{p.productora}</span>
-                                            </div>
-                                        )}
-                                        {p.director && (
-                                            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', display: 'flex', gap: '6px' }}>
-                                                <span style={{ opacity: 0.6 }}>Director/a:</span>
-                                                <span style={{ color: 'var(--text-primary)' }}>{p.director}</span>
-                                            </div>
-                                        )}
-                                        {(p.fecha_inicio || p.fecha_fin) && (
-                                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                                                <Calendar size={11} />
-                                                {formatDate(p.fecha_inicio)}
-                                                {p.fecha_inicio && p.fecha_fin && ' → '}
-                                                {formatDate(p.fecha_fin)}
-                                            </div>
-                                        )}
-                                        {p.fecha_rodaje && (
-                                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', gap: '6px' }}>
-                                                <span style={{ opacity: 0.6 }}>Rodaje:</span>
-                                                <span>{p.fecha_rodaje}</span>
-                                            </div>
-                                        )}
-                                    </div>
+                                                    <h3 style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary)', marginBottom: '4px' }}>
+                                                        {p.proyecto}
+                                                    </h3>
+                                                    <p style={{ color: 'var(--accent-light)', fontSize: '13px', fontWeight: 500, marginBottom: '10px' }}>
+                                                        {p.personaje}
+                                                    </p>
 
-                                    {/* ── Resumen económico ────────────────────── */}
-                                    {hasEconomia && (
-                                        <div style={{
-                                            marginTop: '14px', padding: '10px 12px',
-                                            background: p.tipo_proyecto === 'evento' ? 'rgba(245,158,11,0.06)' : 'rgba(52,211,153,0.06)',
-                                            border: `1px solid ${p.tipo_proyecto === 'evento' ? 'rgba(245,158,11,0.18)' : 'rgba(52,211,153,0.15)'}`,
-                                            borderRadius: '8px',
-                                        }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
-                                                <Euro size={10} color={p.tipo_proyecto === 'evento' ? '#f59e0b' : 'var(--success)'} />
-                                                <span style={{ fontSize: '10px', fontWeight: 700, color: p.tipo_proyecto === 'evento' ? '#f59e0b' : 'var(--success)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                                    Ingresos estimados
-                                                </span>
-                                            </div>
-                                            {totalNomina > 0 && (
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', color: 'var(--text-secondary)', marginBottom: '2px' }}>
-                                                    <span>{p.tipo_proyecto === 'evento' ? 'Jornadas + extras' : `Nómina (${p.num_jornadas ?? 1} jornada${(p.num_jornadas ?? 1) !== 1 ? 's' : ''})`}</span>
-                                                    <span>{fmt(totalNomina)}</span>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                        {p.empresa && (
+                                                            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', display: 'flex', gap: '6px' }}>
+                                                                <span style={{ opacity: 0.6 }}>Empresa:</span>
+                                                                <span style={{ color: 'var(--text-primary)' }}>{p.empresa}</span>
+                                                            </div>
+                                                        )}
+                                                        {p.estudio_doblaje && (
+                                                            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', display: 'flex', gap: '6px' }}>
+                                                                <span style={{ opacity: 0.6 }}>Estudio:</span>
+                                                                <span style={{ color: 'var(--text-primary)' }}>{p.estudio_doblaje}</span>
+                                                            </div>
+                                                        )}
+                                                        {p.num_takes != null && p.tipo_proyecto === 'doblaje' && (
+                                                            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', display: 'flex', gap: '6px' }}>
+                                                                <span style={{ opacity: 0.6 }}>Takes:</span>
+                                                                <span style={{ color: 'var(--text-primary)' }}>{p.num_takes}</span>
+                                                            </div>
+                                                        )}
+                                                        {p.productora && (
+                                                            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', display: 'flex', gap: '6px' }}>
+                                                                <span style={{ opacity: 0.6 }}>Productora:</span>
+                                                                <span style={{ color: 'var(--text-primary)' }}>{p.productora}</span>
+                                                            </div>
+                                                        )}
+                                                        {p.director && (
+                                                            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', display: 'flex', gap: '6px' }}>
+                                                                <span style={{ opacity: 0.6 }}>Director/a:</span>
+                                                                <span style={{ color: 'var(--text-primary)' }}>{p.director}</span>
+                                                            </div>
+                                                        )}
+                                                        {(p.fecha_inicio || p.fecha_fin) && (
+                                                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                                                                <Calendar size={11} />
+                                                                {formatDate(p.fecha_inicio)}
+                                                                {p.fecha_inicio && p.fecha_fin && ' → '}
+                                                                {formatDate(p.fecha_fin)}
+                                                            </div>
+                                                        )}
+                                                        {p.fecha_rodaje && (
+                                                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', gap: '6px' }}>
+                                                                <span style={{ opacity: 0.6 }}>Rodaje:</span>
+                                                                <span>{p.fecha_rodaje}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* ── Resumen económico ────────────────────── */}
+                                                    {hasEconomia && (
+                                                        <div style={{
+                                                            marginTop: '14px', padding: '10px 12px',
+                                                            background: p.tipo_proyecto === 'evento' ? 'rgba(245,158,11,0.06)' : 'rgba(52,211,153,0.06)',
+                                                            border: `1px solid ${p.tipo_proyecto === 'evento' ? 'rgba(245,158,11,0.18)' : 'rgba(52,211,153,0.15)'}`,
+                                                            borderRadius: '8px',
+                                                        }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+                                                                <Euro size={10} color={p.tipo_proyecto === 'evento' ? '#f59e0b' : 'var(--success)'} />
+                                                                <span style={{ fontSize: '10px', fontWeight: 700, color: p.tipo_proyecto === 'evento' ? '#f59e0b' : 'var(--success)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                                    Ingresos estimados
+                                                                </span>
+                                                            </div>
+                                                            {totalNomina > 0 && (
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', color: 'var(--text-secondary)', marginBottom: '2px' }}>
+                                                                    <span>{p.tipo_proyecto === 'evento' ? 'Jornadas + extras' : `Nómina (${p.num_jornadas ?? 1} jornada${(p.num_jornadas ?? 1) !== 1 ? 's' : ''})`}</span>
+                                                                    <span>{fmt(totalNomina)}</span>
+                                                                </div>
+                                                            )}
+                                                            {derechosNeto > 0 && (
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', color: 'var(--text-secondary)', marginBottom: '2px' }}>
+                                                                    <span>Derechos neto (−{p.comision_pct ?? 0}%)</span>
+                                                                    <span>{fmt(derechosNeto)}</span>
+                                                                </div>
+                                                            )}
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700, color: p.tipo_proyecto === 'evento' ? '#f59e0b' : 'var(--success)', borderTop: `1px solid ${p.tipo_proyecto === 'evento' ? 'rgba(245,158,11,0.15)' : 'rgba(52,211,153,0.15)'}`, marginTop: '6px', paddingTop: '6px' }}>
+                                                                <span>Total estimado</span>
+                                                                <span>{fmt(total)}</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {p.notas && (
+                                                        <p style={{
+                                                            marginTop: '12px', fontSize: '12px', color: 'var(--text-secondary)',
+                                                            borderTop: '1px solid var(--border)', paddingTop: '10px',
+                                                            overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2,
+                                                            WebkitBoxOrient: 'vertical'
+                                                        }}>
+                                                            {p.notas}
+                                                        </p>
+                                                    )}
                                                 </div>
-                                            )}
-                                            {derechosNeto > 0 && (
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', color: 'var(--text-secondary)', marginBottom: '2px' }}>
-                                                    <span>Derechos neto (−{p.comision_pct ?? 0}%)</span>
-                                                    <span>{fmt(derechosNeto)}</span>
-                                                </div>
-                                            )}
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700, color: p.tipo_proyecto === 'evento' ? '#f59e0b' : 'var(--success)', borderTop: `1px solid ${p.tipo_proyecto === 'evento' ? 'rgba(245,158,11,0.15)' : 'rgba(52,211,153,0.15)'}`, marginTop: '6px', paddingTop: '6px' }}>
-                                                <span>Total estimado</span>
-                                                <span>{fmt(total)}</span>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {p.notas && (
-                                        <p style={{
-                                            marginTop: '12px', fontSize: '12px', color: 'var(--text-secondary)',
-                                            borderTop: '1px solid var(--border)', paddingTop: '10px',
-                                            overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2,
-                                            WebkitBoxOrient: 'vertical'
-                                        }}>
-                                            {p.notas}
-                                        </p>
-                                    )}
-                                </div>
-                            )
-                        })}
+                                            )
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>

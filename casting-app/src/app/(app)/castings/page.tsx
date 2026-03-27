@@ -22,7 +22,7 @@ const ESTADOS_OPCIONES: { val: EstadoCasting; label: string; color: string }[] =
 
 const estadoFilters = [
     { val: '', label: 'Todos' },
-    { val: 'pendiente', label: 'Recibidos' },
+    { val: 'pendiente', label: 'No enviados' },
     { val: 'en_proceso', label: 'En proceso' },
     { val: 'opcionado', label: 'Opcionados', color: '#f97316' },
     { val: 'callback', label: 'Con Callback' },
@@ -92,8 +92,10 @@ function CastingProgresionDropdown({ casting, onUpdate }: { casting: Casting, on
                 }}>
                     <div style={{ padding: '4px 8px', fontSize: '9px', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>Hitos del Proceso</div>
                     
-                    <MilestoneItem label="Enviado" done={casting.estado !== 'pendiente'} color="var(--info)" />
+                    <MilestoneItem label="Enviado" done={casting.estado !== 'pendiente'} color="var(--info)" onClick={() => onUpdate(casting.id, { estado: casting.estado === 'pendiente' ? 'enviado' : 'pendiente' })} isAction />
                     
+                    <MilestoneItem label="No enviado" done={casting.estado === 'pendiente'} color="var(--text-secondary)" onClick={() => onUpdate(casting.id, { estado: 'pendiente' })} isAction />
+
                     <MilestoneItem 
                         label="Opcionado" 
                         done={casting.fue_opcionado} 
@@ -413,23 +415,24 @@ export default function CastingsPage() {
                 {/* Stats Summary */}
                 <div className="stat-grid mb-6">
                     {[
-                        { val: 'recibidos', label: 'Recibidos', color: 'var(--text-secondary)', count: data.length },
+                        { val: 'total', label: 'Recibidos', color: '#9d8fff', count: data.length },
                         { val: 'enviados', label: 'Enviados', color: 'var(--info)', count: data.filter(c => c.estado !== 'pendiente').length },
+                        { val: 'no_enviado', label: 'No enviados', color: 'var(--text-secondary)', count: data.filter(c => c.estado === 'pendiente').length },
                         { val: 'opcionado', label: 'Opcionados', color: '#f97316', count: data.filter(c => c.fue_opcionado).length },
-                        { val: 'callback', label: 'Con Callback', color: 'var(--warning)', count: data.filter(c => c.tuvo_callback).length },
-                        { val: 'seleccionado', label: 'Seleccionados', color: 'var(--success)', count: data.filter(c => c.estado === 'seleccionado').length },
+                        { val: 'callback', label: 'Callbacks', color: 'var(--warning)', count: data.filter(c => c.tuvo_callback).length },
+                        { val: 'seleccionado', label: 'Selecc.', color: 'var(--success)', count: data.filter(c => c.estado === 'seleccionado').length },
                     ].map(({ val, label, color, count }) => (
                         <div
                             key={val}
-                            className={`stat-card cursor-pointer ${estadoFilter === (val === 'recibidos' ? 'pendiente' : val === 'enviados' ? 'en_proceso' : val) ? 'active' : ''}`}
-                            onClick={() => setEstadoFilter(val === 'recibidos' ? 'pendiente' : val === 'enviados' ? 'en_proceso' : val)}
+                            className={`stat-card cursor-pointer ${estadoFilter === (val === 'total' ? '' : val === 'no_enviado' ? 'pendiente' : val === 'enviados' ? 'en_proceso' : val) ? 'active' : ''}`}
+                            onClick={() => setEstadoFilter(val === 'total' ? '' : val === 'no_enviado' ? 'pendiente' : val === 'enviados' ? 'en_proceso' : val)}
                             style={{
                                 borderLeft: `3px solid ${color}`,
-                                background: (estadoFilter === (val === 'recibidos' ? 'pendiente' : val === 'enviados' ? 'en_proceso' : val)) ? 'rgba(255,255,255,0.04)' : 'var(--bg-card)'
+                                background: (estadoFilter === (val === 'total' ? '' : val === 'no_enviado' ? 'pendiente' : val === 'enviados' ? 'en_proceso' : val)) ? 'rgba(255,255,255,0.04)' : 'var(--bg-card)'
                             }}
                         >
-                            <div className="stat-value" style={{ color }}>{count}</div>
-                            <div className="stat-label" style={{ marginBottom: 0 }}>{label}</div>
+                            <div className="stat-value" style={{ color, fontSize: '20px' }}>{count}</div>
+                            <div className="stat-label" style={{ marginBottom: 0, fontSize: '10px' }}>{label}</div>
                         </div>
                     ))}
                 </div>

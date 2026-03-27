@@ -27,6 +27,12 @@ export default function FinanzasPage() {
     const [search, setSearch] = useState('')
     const [estadoFilter, setEstadoFilter] = useState('')
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+    const [showAmounts, setShowAmounts] = useState<boolean>(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('finanzas_show_amounts') !== 'false'
+        }
+        return true
+    })
 
     const filtered = useMemo(() =>
         data.filter(f => {
@@ -57,6 +63,12 @@ export default function FinanzasPage() {
 
     const openEdit = (f: Finanza) => { setEditing(f); setModalOpen(true) }
     const openNew = () => { setEditing(null); setModalOpen(true) }
+
+    const toggleAmounts = () => {
+        const newValue = !showAmounts
+        setShowAmounts(newValue)
+        localStorage.setItem('finanzas_show_amounts', String(newValue))
+    }
 
 function FinanzaMobileCard({ 
     finanza, 
@@ -158,9 +170,15 @@ function FinanzaMobileCard({
                         <h2>Finanzas</h2>
                         <p>Gestión de ingresos y pagos</p>
                     </div>
-                    <button className="btn btn-primary" onClick={openNew}>
-                        <Plus size={14} /> Nuevo Ingreso
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <button className="btn btn-secondary" onClick={toggleAmounts}>
+                            {showAmounts ? <EyeOff size={14} /> : <Eye size={14} />}
+                            <span className="desktop-only">{showAmounts ? 'Ocultar' : 'Mostrar'}</span>
+                        </button>
+                        <button className="btn btn-primary" onClick={openNew}>
+                            <Plus size={14} /> Nuevo Ingreso
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -171,30 +189,30 @@ function FinanzaMobileCard({
                         <div className="stat-icon" style={{ background: 'rgba(124,106,247,0.12)' }}>
                             <DollarSign size={18} color="#9d8fff" />
                         </div>
-                        <div className="stat-value">{formatCurrency(totals.total)}</div>
+                        <div className="stat-value">{showAmounts ? formatCurrency(totals.total) : '••••'}</div>
                         <div className="stat-label" style={{ marginBottom: 0, marginTop: '6px' }}>Total Facturado</div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-icon" style={{ background: 'rgba(52,211,153,0.12)' }}>
                             <CheckCircle size={18} color="#34d399" />
                         </div>
-                        <div className="stat-value">{formatCurrency(totals.cobrado)}</div>
+                        <div className="stat-value">{showAmounts ? formatCurrency(totals.cobrado) : '••••'}</div>
                         <div className="stat-label" style={{ marginBottom: 0, marginTop: '6px' }}>Cobrado</div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-icon" style={{ background: 'rgba(251,191,36,0.12)' }}>
                             <Clock size={18} color="#fbbf24" />
                         </div>
-                        <div className="stat-value">{formatCurrency(totals.pendiente)}</div>
+                        <div className="stat-value">{showAmounts ? formatCurrency(totals.pendiente) : '••••'}</div>
                         <div className="stat-label" style={{ marginBottom: 0, marginTop: '6px' }}>Pendiente</div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-icon" style={{ background: 'rgba(96,165,250,0.12)' }}>
                             <TrendingUp size={18} color="#60a5fa" />
                         </div>
-                        <div className="stat-value">{formatCurrency(totals.netoCobrado)}</div>
+                        <div className="stat-value">{showAmounts ? formatCurrency(totals.netoCobrado) : '••••'}</div>
                         <div className="stat-label" style={{ marginBottom: 0, marginTop: '6px' }}>Neto Real</div>
-                        <div className="stat-sublabel">Tras comisiones e impuestos</div>
+                        <div className="stat-sublabel desktop-only">Tras comisiones e impuestos</div>
                     </div>
                 </div>
 

@@ -8,7 +8,8 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     LineChart, Line, PieChart, Pie, Cell
 } from 'recharts'
-import { Film, Clapperboard, DollarSign, TrendingUp, PhoneCall, Trophy, Star } from 'lucide-react'
+import { Film, Clapperboard, DollarSign, TrendingUp, PhoneCall, Trophy, Star, Eye, EyeOff } from 'lucide-react'
+import { useState } from 'react'
 import DashboardCalendar from '@/components/DashboardCalendar'
 
 const COLORS = ['#7c6af7', '#34d399', '#fbbf24', '#f87171', '#60a5fa']
@@ -30,6 +31,12 @@ function StatCard({ label, value, sub, icon, color }: {
 }
 
 export default function DashboardPage() {
+    const [showIncome, setShowIncome] = useState<boolean>(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('dashboard_show_income') !== 'false'
+        }
+        return true
+    })
     const { data: castings, loading: lc } = useCastings()
     const { data: proyectos } = useProyectos()
     const { data: finanzas } = useFinanzas()
@@ -66,6 +73,12 @@ export default function DashboardPage() {
             ingresosThisMonth,
         }
     }, [castings, finanzas, proyectos.length, thisMonth, thisYear])
+
+    const toggleIncome = () => {
+        const newValue = !showIncome
+        setShowIncome(newValue)
+        localStorage.setItem('dashboard_show_income', String(newValue))
+    }
 
     // Chart: castings por mes (últimos 6 meses)
     const castingsByMonth = useMemo(() => {
@@ -160,13 +173,18 @@ export default function DashboardPage() {
                         color="#34d399"
                         sub="total histórico"
                     />
-                    <StatCard
-                        label="Ingresos este mes"
-                        value={formatCurrency(stats.ingresosThisMonth)}
-                        icon={<DollarSign size={18} />}
-                        color="#fbbf24"
-                        sub="cobrado"
-                    />
+                    <div className="stat-card" style={{ cursor: 'pointer' }} onClick={toggleIncome}>
+                        <div className="stat-icon" style={{ background: '#fbbf2420' }}>
+                            <div style={{ color: '#fbbf24' }}><DollarSign size={18} /></div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div className="stat-value">
+                                {showIncome ? formatCurrency(stats.ingresosThisMonth) : '••••••'}
+                            </div>
+                            {showIncome ? <EyeOff size={14} style={{ opacity: 0.5 }} /> : <Eye size={14} style={{ opacity: 0.5 }} />}
+                        </div>
+                        <div className="stat-label" style={{ marginBottom: 0, marginTop: '6px' }}>Ingresos este mes</div>
+                    </div>
                 </div>
 
                 {/* Calendario */}
