@@ -43,11 +43,15 @@ export default function DashboardPage() {
     const now = new Date()
     const todayStr = now.toISOString().split('T')[0]
 
-    const nextEvent = useMemo(() => {
-        if (!events) return null
-        return events
-            .filter(e => e.event_date_start >= todayStr)
-            .sort((a,b) => a.event_date_start.localeCompare(b.event_date_start))[0]
+    const nextEventsDay = useMemo(() => {
+        if (!events || events.length === 0) return []
+        const future = events.filter(e => e.event_date_start >= todayStr)
+            .sort((a,b) => a.event_date_start.localeCompare(b.event_date_start))
+        
+        if (future.length === 0) return []
+        
+        const firstDate = future[0].event_date_start
+        return future.filter(e => e.event_date_start === firstDate)
     }, [events, todayStr])
     const thisMonth = now.getMonth()
     const thisYear = now.getFullYear()
@@ -139,40 +143,55 @@ export default function DashboardPage() {
 
     return (
         <>
-            <div className="page-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Star size={20} color="#9d8fff" fill="#9d8fff" />
-                    <div>
-                        <h2>Dashboard</h2>
-                        <p>{now.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                    </div>
-                </div>
+            <div className="page-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                <Star size={24} color="#9d8fff" fill="#9d8fff" style={{ marginBottom: '8px' }} />
+                <h2 style={{ margin: 0 }}>Dashboard</h2>
+                <p style={{ margin: 0 }}>{now.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>
 
             <div className="page-body">
                 {/* Stats */}
                 <div className="stat-grid mb-6">
                     {/* Widget Calendario Estilo iOS */}
-                    <div className="stat-card" style={{ display: 'flex', alignItems: 'center', gap: '14px', borderLeft: '4px solid #7c6af7' }}>
-                        {nextEvent ? (
+                    <div className="stat-card" style={{ display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '120px' }}>
+                        {nextEventsDay.length > 0 ? (
                             <>
-                                <div style={{ textAlign: 'center', minWidth: '45px', background: 'rgba(255,255,255,0.03)', padding: '6px 4px', borderRadius: '8px' }}>
-                                    <div style={{ fontSize: '9px', fontWeight: 800, color: '#f87171', textTransform: 'uppercase', lineHeight: 1, marginBottom: '2px' }}>
-                                        {new Date(nextEvent.event_date_start + 'T12:00:00').toLocaleDateString('es-ES', { month: 'short' }).replace('.', '').toUpperCase()}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ 
+                                        textAlign: 'center', 
+                                        width: '40px', 
+                                        height: '40px', 
+                                        background: 'rgba(248,113,113,0.1)', 
+                                        padding: '4px', 
+                                        borderRadius: '10px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        border: '1px solid rgba(248,113,113,0.2)'
+                                    }}>
+                                        <div style={{ fontSize: '8px', fontWeight: 900, color: '#f87171', textTransform: 'uppercase', lineHeight: 1 }}>
+                                            {new Date(nextEventsDay[0].event_date_start + 'T12:00:00').toLocaleDateString('es-ES', { month: 'short' }).replace('.', '').toUpperCase()}
+                                        </div>
+                                        <div style={{ fontSize: '18px', fontWeight: 900, color: '#f87171', lineHeight: 1 }}>
+                                            {new Date(nextEventsDay[0].event_date_start + 'T12:00:00').getDate()}
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
-                                        {new Date(nextEvent.event_date_start + 'T12:00:00').getDate()}
-                                    </div>
+                                    <div style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 600 }}>Próximos eventos</div>
                                 </div>
-                                <div style={{ overflow: 'hidden' }}>
-                                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                                        {nextEvent.title}
-                                    </div>
-                                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Próximo evento</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '100px', overflowY: 'auto', paddingRight: '4px' }}>
+                                    {nextEventsDay.map(e => (
+                                        <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />
+                                            <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                                                {e.title}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </>
                         ) : (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                 <div className="stat-icon" style={{ background: 'rgba(255,255,255,0.05)' }}>
                                     <Calendar size={18} color="var(--text-secondary)" />
                                 </div>
