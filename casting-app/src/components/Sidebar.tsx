@@ -16,8 +16,8 @@ const navItems = [
     { href: '/castings', label: 'Castings', icon: Film },
     { href: '/proyectos', label: 'Proyectos', icon: Clapperboard },
     { href: '/finanzas', label: 'Finanzas', icon: DollarSign },
-    { href: '/contactos', label: 'Contactos', icon: Users },
     { href: '/estadisticas', label: 'Estadísticas', icon: BarChart3 },
+    { href: '/contactos', label: 'Contactos', icon: Users },
 ]
 
 export default function Sidebar() {

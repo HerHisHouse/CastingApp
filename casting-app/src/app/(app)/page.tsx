@@ -1,14 +1,12 @@
 'use client'
 import { useMemo } from 'react'
-import { useCastings } from '@/hooks/useData'
-import { useProyectos } from '@/hooks/useData'
-import { useFinanzas } from '@/hooks/useData'
+import { useCastings, useProyectos, useFinanzas, useCalendarEvents } from '@/hooks/useData'
 import { BadgeEstado, BadgeTipoProyecto, formatDate, formatCurrency } from '@/components/ui'
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     LineChart, Line, PieChart, Pie, Cell
 } from 'recharts'
-import { Film, Clapperboard, DollarSign, TrendingUp, PhoneCall, Trophy, Star, Eye, EyeOff } from 'lucide-react'
+import { Film, Clapperboard, DollarSign, TrendingUp, PhoneCall, Trophy, Star, Eye, EyeOff, Calendar } from 'lucide-react'
 import { useState } from 'react'
 import DashboardCalendar from '@/components/DashboardCalendar'
 
@@ -40,8 +38,17 @@ export default function DashboardPage() {
     const { data: castings, loading: lc } = useCastings()
     const { data: proyectos } = useProyectos()
     const { data: finanzas } = useFinanzas()
+    const { data: events } = useCalendarEvents()
 
     const now = new Date()
+    const todayStr = now.toISOString().split('T')[0]
+
+    const nextEvent = useMemo(() => {
+        if (!events) return null
+        return events
+            .filter(e => e.event_date_start >= todayStr)
+            .sort((a,b) => a.event_date_start.localeCompare(b.event_date_start))[0]
+    }, [events, todayStr])
     const thisMonth = now.getMonth()
     const thisYear = now.getFullYear()
 
@@ -145,6 +152,38 @@ export default function DashboardPage() {
             <div className="page-body">
                 {/* Stats */}
                 <div className="stat-grid mb-6">
+                    {/* Widget Calendario Estilo iOS */}
+                    <div className="stat-card" style={{ display: 'flex', alignItems: 'center', gap: '14px', borderLeft: '4px solid #7c6af7' }}>
+                        {nextEvent ? (
+                            <>
+                                <div style={{ textAlign: 'center', minWidth: '45px', background: 'rgba(255,255,255,0.03)', padding: '6px 4px', borderRadius: '8px' }}>
+                                    <div style={{ fontSize: '9px', fontWeight: 800, color: '#f87171', textTransform: 'uppercase', lineHeight: 1, marginBottom: '2px' }}>
+                                        {new Date(nextEvent.event_date_start + 'T12:00:00').toLocaleDateString('es-ES', { month: 'short' }).replace('.', '').toUpperCase()}
+                                    </div>
+                                    <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
+                                        {new Date(nextEvent.event_date_start + 'T12:00:00').getDate()}
+                                    </div>
+                                </div>
+                                <div style={{ overflow: 'hidden' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                        {nextEvent.title}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Próximo evento</div>
+                                </div>
+                            </>
+                        ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div className="stat-icon" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                                    <Calendar size={18} color="var(--text-secondary)" />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)' }}>Sin eventos</div>
+                                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', opacity: 0.6 }}>Agenda vacía</div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     <StatCard
                         label="Castings este mes"
                         value={stats.castingsThisMonth}
@@ -173,15 +212,15 @@ export default function DashboardPage() {
                         color="#34d399"
                         sub="total histórico"
                     />
-                    <div className="stat-card" style={{ cursor: 'pointer' }} onClick={toggleIncome}>
+                    <div className="stat-card" style={{ cursor: 'pointer', position: 'relative' }} onClick={toggleIncome}>
+                        <div style={{ position: 'absolute', top: '14px', right: '14px', opacity: 0.5 }}>
+                            {showIncome ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </div>
                         <div className="stat-icon" style={{ background: '#fbbf2420' }}>
                             <div style={{ color: '#fbbf24' }}><DollarSign size={18} /></div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div className="stat-value">
-                                {showIncome ? formatCurrency(stats.ingresosThisMonth) : '••••••'}
-                            </div>
-                            {showIncome ? <EyeOff size={14} style={{ opacity: 0.5 }} /> : <Eye size={14} style={{ opacity: 0.5 }} />}
+                        <div className="stat-value">
+                            {showIncome ? formatCurrency(stats.ingresosThisMonth) : '••••••'}
                         </div>
                         <div className="stat-label" style={{ marginBottom: 0, marginTop: '6px' }}>Ingresos este mes</div>
                     </div>
