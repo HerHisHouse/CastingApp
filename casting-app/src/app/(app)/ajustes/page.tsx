@@ -3,7 +3,8 @@ import { useState, useRef } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { updateUserMeta, signOut, uploadAvatar } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
-import { Camera, LogOut, Settings, Loader2, Check } from 'lucide-react'
+import { Camera, LogOut, Settings, Loader2, Check, Bell } from 'lucide-react'
+import NotificacionesSettings from '@/components/NotificacionesSettings'
 
 export default function AjustesPage() {
     const { user, username, avatarUrl, genero, refresh } = useAuth()
@@ -193,6 +194,17 @@ export default function AjustesPage() {
                             {savingPerfil ? <Loader2 size={14} className="spin" /> : savedPerfil ? <Check size={14} /> : null}
                             {savingPerfil ? 'Guardando…' : 'Guardar preferencia'}
                         </button>
+                    </div>
+
+                    {/* ─── NOTIFICACIONES ─────────────────────────── */}
+                    <div className="card">
+                        <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ width: 28, height: 28, borderRadius: '8px', background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>
+                                <Bell size={14} color="var(--accent-light)" />
+                            </span>
+                            Notificaciones
+                        </div>
+                        <NotificacionesSettings />
                     </div>
 
                     {/* ─── CERRAR SESIÓN ──────────────────────────────── */}
