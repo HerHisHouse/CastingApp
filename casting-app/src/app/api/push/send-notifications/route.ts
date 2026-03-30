@@ -5,11 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import webpush from 'web-push'
 
-webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT!,
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-    process.env.VAPID_PRIVATE_KEY!
-)
+export const dynamic = 'force-dynamic'
 
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,6 +29,17 @@ export async function GET(req: NextRequest) {
 
 async function runNotifications() {
     try {
+        if (!process.env.VAPID_SUBJECT || !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+            console.error('VAPID environment variables are missing')
+            return NextResponse.json({ error: 'Config missing' }, { status: 500 })
+        }
+
+        webpush.setVapidDetails(
+            process.env.VAPID_SUBJECT,
+            process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+            process.env.VAPID_PRIVATE_KEY
+        )
+
         const now = new Date()
         const todayStr = now.toISOString().split('T')[0]
 
