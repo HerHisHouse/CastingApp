@@ -34,6 +34,7 @@ export function usePushNotifications() {
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [isSupported, setIsSupported] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
     // Check support and current state on mount
     useEffect(() => {
@@ -74,15 +75,30 @@ export function usePushNotifications() {
 
     const subscribe = useCallback(async () => {
         if (!user || !isSupported) return false
+        setError(null)
         try {
+            const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+            if (!vapidKey) {
+                setError('Falta la clave pública VAPID (NEXT_PUBLIC_VAPID_PUBLIC_KEY)')
+                return false
+            }
+
             const perm = await Notification.requestPermission()
             setPermission(perm)
-            if (perm !== 'granted') return false
+            if (perm !== 'granted') {
+                setError('Permiso de notificaciones denegado')
+                return false
+            }
 
             const reg = await navigator.serviceWorker.ready
+            if (!reg.pushManager) {
+                setError('El PushManager no está disponible en este navegador')
+                return false
+            }
+
             const sub = await reg.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!).buffer as ArrayBuffer,
+                applicationServerKey: urlBase64ToUint8Array(vapidKey).buffer as ArrayBuffer,
             })
 
             const res = await fetch('/api/push/subscribe', {
@@ -94,9 +110,14 @@ export function usePushNotifications() {
             if (res.ok) {
                 setIsSubscribed(true)
                 return true
+            } else {
+                const errData = await res.json()
+                setError(errData.error || 'Error al guardar suscripción en el servidor')
+                return false
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error('Subscribe error:', e)
+            setError(e.message || 'Error desconocido al suscribirse')
         }
         return false
     }, [user, isSupported])
@@ -152,7 +173,7 @@ export function usePushNotifications() {
 
     return {
         isSupported, permission, isSubscribed, settings,
-        loading, saving,
+        loading, saving, error,
         subscribe, unsubscribe, saveSettings, toggleEnabled,
     }
 }

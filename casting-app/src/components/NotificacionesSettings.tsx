@@ -21,7 +21,8 @@ const ADVANCE_OPTIONS = [
 export default function NotificacionesSettings() {
     const {
         isSupported, permission, isSubscribed, settings,
-        loading, saving, subscribe, unsubscribe, saveSettings, toggleEnabled,
+        loading, saving, error,
+        subscribe, unsubscribe, saveSettings, toggleEnabled,
     } = usePushNotifications()
 
     const [localSettings, setLocalSettings] = useState<NotificationSettings | null>(null)
@@ -86,6 +87,13 @@ export default function NotificacionesSettings() {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {error && (
+                <div style={{ display: 'flex', gap: '8px', padding: '12px', background: 'rgba(248,113,113,0.08)', borderRadius: '10px', border: '1px solid rgba(248,113,113,0.2)', fontSize: '11px', color: 'var(--danger)' }}>
+                    <AlertCircle size={14} />
+                    <span><strong>Error:</strong> {error}</span>
+                </div>
+            )}
+
             {/* Main toggle */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: effectiveSettings.enabled ? 'rgba(124,106,247,0.08)' : 'rgba(255,255,255,0.03)', border: `1px solid ${effectiveSettings.enabled ? 'rgba(124,106,247,0.3)' : 'var(--border)'}`, borderRadius: '12px', gap: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
