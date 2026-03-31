@@ -14,8 +14,13 @@ const EVENT_TYPES = [
 ] as const
 
 const ADVANCE_OPTIONS = [
-    { val: '24h', label: '24h antes', desc: 'Notificación el día anterior' },
-    { val: 'same_day', label: 'Mismo día', desc: 'Notificación por la mañana del evento' },
+    { val: '48h', label: '48h antes', desc: 'Dos días antes' },
+    { val: '24h', label: '24h antes', desc: 'El día anterior' },
+    { val: '12h', label: '12h antes', desc: 'Medio día antes' },
+    { val: '6h', label: '6h antes', desc: 'Seis horas antes' },
+    { val: '3h', label: '3h antes', desc: 'Tres horas antes' },
+    { val: '2h', label: '2h antes', desc: 'Dos horas antes' },
+    { val: '1h', label: '1h antes', desc: 'Una hora antes' },
 ]
 
 export default function NotificacionesSettings() {

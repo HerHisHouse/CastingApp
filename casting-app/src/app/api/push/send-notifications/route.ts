@@ -41,15 +41,7 @@ async function runNotifications() {
         )
 
         const now = new Date()
-        const todayStr = now.toISOString().split('T')[0]
-
-        // Tomorrow date
-        const tomorrow = new Date(now)
-        tomorrow.setDate(tomorrow.getDate() + 1)
-        const tomorrowStr = tomorrow.toISOString().split('T')[0]
-
-        // 2 hours from now (for same day events)
-        const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000)
+        const nowTime = now.getTime()
 
         // Get all users with push subscriptions
         const { data: subscriptions } = await supabaseAdmin
@@ -60,93 +52,106 @@ async function runNotifications() {
             return NextResponse.json({ message: 'No subscriptions' })
         }
 
-        // Get unique user IDs from subscriptions
         const userIds = [...new Set(subscriptions.map((s: any) => s.user_id))]
         let totalSent = 0
 
         for (const userId of userIds) {
             const userSubs = subscriptions.filter((s: any) => s.user_id === userId)
-
-            // Get user notification settings
             const { data: settings } = await supabaseAdmin
                 .from('notification_settings')
                 .select('*')
                 .eq('user_id', userId)
                 .single()
 
-            // Skip if notifications disabled
             if (settings && !settings.enabled) continue
 
             const advanceTimes: string[] = settings?.advance_times ?? ['24h']
+            
+            // Map old 'same_day' to something or keep it compatible
+            // If user has old 'same_day', we can assume they want a morning notification
+            
+            // Get events starting in the next 3 days (to cover 48h)
+            const maxDate = new Date(nowTime + 72 * 60 * 60 * 1000).toISOString().split('T')[0]
+            const minDate = now.toISOString().split('T')[0]
 
-            // Get upcoming calendar events for this user
             const { data: events } = await supabaseAdmin
                 .from('calendar_events')
                 .select('*')
                 .eq('user_id', userId)
-                .gte('event_date_start', todayStr)
-                .lte('event_date_start', tomorrowStr)
+                .gte('event_date_start', minDate)
+                .lte('event_date_start', maxDate)
 
             if (!events || events.length === 0) continue
 
             for (const event of events) {
-                const eventDate = new Date(event.event_date_start + 'T12:00:00')
-                const isToday = event.event_date_start === todayStr
-                const isTomorrow = event.event_date_start === tomorrowStr
+                // Determine event date-time
+                // If event_time is missing, default to 09:00
+                const timeStr = event.event_time || '09:00'
+                const eventDateTime = new Date(`${event.event_date_start}T${timeStr.includes(':') ? timeStr : timeStr + ':00'}`)
+                const eventMillis = eventDateTime.getTime()
+                const diffHours = (eventMillis - nowTime) / (1000 * 60 * 60)
 
-                // Determine which advance types apply right now
-                const applicableAdvances: string[] = []
-                if (isTomorrow && advanceTimes.includes('24h')) applicableAdvances.push('24h')
-                if (isToday && advanceTimes.includes('same_day')) applicableAdvances.push('same_day')
+                // Define windows for each option
+                const possibleOptions = ['48h', '24h', '12h', '6h', '3h', '2h', '1h']
+                
+                for (const opt of possibleOptions) {
+                    if (!advanceTimes.includes(opt)) continue
+                    
+                    const optHours = parseInt(opt)
+                    
+                    // IF we are within the window for this option
+                    // (example: if diffHours is 2.5 and we are checking '3h')
+                    // Logic: now < eventTime - (optHours - 1) AND now > eventTime - (optHours + some buffer)
+                    // Simplified: if we are less than optHours away, we can send it (log prevents double)
+                    if (diffHours <= optHours && diffHours > 0) {
+                        
+                        // Check if already sent for THIS specific option
+                        const { data: alreadySent } = await supabaseAdmin
+                            .from('notification_log')
+                            .select('id')
+                            .eq('user_id', userId)
+                            .eq('event_id', event.id)
+                            .eq('advance_type', opt)
+                            .single()
 
-                for (const advance of applicableAdvances) {
-                    // Check if already sent
-                    const { data: alreadySent } = await supabaseAdmin
-                        .from('notification_log')
-                        .select('id')
-                        .eq('user_id', userId)
-                        .eq('event_id', event.id)
-                        .eq('advance_type', advance)
-                        .single()
+                        if (alreadySent) continue
 
-                    if (alreadySent) continue
+                        // Check event type settings
+                        const notifType = getNotifTypeForEvent(event.event_type)
+                        if (settings && notifType && !settings[notifType]) continue
 
-                    // Check event type settings
-                    const notifType = getNotifTypeForEvent(event.event_type)
-                    if (settings && notifType && !settings[notifType]) continue
+                        // Build message
+                        const { title, body } = buildNotificationMessage(event, opt)
 
-                    // Build message
-                    const { title, body } = buildNotificationMessage(event, advance)
-
-                    // Send to all user's devices
-                    for (const sub of userSubs) {
-                        try {
-                            await webpush.sendNotification(
-                                { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-                                JSON.stringify({
-                                    title,
-                                    body,
-                                    icon: '/icons/icon-192x192.png',
-                                    badge: '/icons/icon-192x192.png',
-                                    tag: `${event.id}-${advance}`,
-                                    data: { url: '/' },
-                                })
-                            )
-                            totalSent++
-                        } catch (pushErr: any) {
-                            // Remove invalid subscriptions (410 Gone)
-                            if (pushErr.statusCode === 410) {
-                                await supabaseAdmin.from('push_subscriptions').delete().eq('endpoint', sub.endpoint)
+                        // Send push
+                        for (const sub of userSubs) {
+                            try {
+                                await webpush.sendNotification(
+                                    { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+                                    JSON.stringify({
+                                        title,
+                                        body,
+                                        icon: '/icons/icon-192x192.png',
+                                        badge: '/icons/icon-192x192.png',
+                                        tag: `${event.id}-${opt}`,
+                                        data: { url: '/' },
+                                    })
+                                )
+                                totalSent++
+                            } catch (err: any) {
+                                if (err.statusCode === 410) {
+                                    await supabaseAdmin.from('push_subscriptions').delete().eq('endpoint', sub.endpoint)
+                                }
                             }
                         }
-                    }
 
-                    // Log sent notification
-                    await supabaseAdmin.from('notification_log').insert({
-                        user_id: userId,
-                        event_id: event.id,
-                        advance_type: advance,
-                    })
+                        // Log
+                        await supabaseAdmin.from('notification_log').insert({
+                            user_id: userId,
+                            event_id: event.id,
+                            advance_type: opt,
+                        })
+                    }
                 }
             }
         }
@@ -172,7 +177,14 @@ function getNotifTypeForEvent(eventType: string): string | null {
 }
 
 function buildNotificationMessage(event: any, advance: string): { title: string; body: string } {
-    const prefix = advance === '24h' ? 'Mañana' : 'Hoy'
+    let prefix = ''
+    if (advance === '48h') prefix = 'En 2 días'
+    else if (advance === '24h') prefix = 'Mañana'
+    else {
+        const hours = parseInt(advance)
+        prefix = `En ${hours} hora${hours > 1 ? 's' : ''}`
+    }
+    
     const title = event.title
 
     switch (event.event_type) {

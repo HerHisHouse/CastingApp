@@ -34,17 +34,22 @@ export async function syncCastingEvents(casting: Casting, userId: string) {
             notes = `${casting.personaje}${timeStr}${placeStr}`
         }
 
+        // Clean time for DB column (HH:mm)
+        const timeMatch = (casting.hora_casting || '').match(/(\d{1,2})[:h](\d{2})/i)
+        const dbTime = timeMatch ? `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}` : '09:00'
+
         events.push({
             user_id: userId,
             title: title,
             event_type: 'casting_deadline',
             event_date_start: casting.fecha_casting,
             event_date_end: null,
+            event_time: dbTime,
             related_casting_id: casting.id,
             related_project_id: null,
             related_finance_id: null,
             notes: notes
-        })
+        } as any)
     }
 
     // 3. Callback
@@ -55,11 +60,12 @@ export async function syncCastingEvents(casting: Casting, userId: string) {
             event_type: 'callback',
             event_date_start: casting.callback_fecha,
             event_date_end: null,
+            event_time: '12:00',
             related_casting_id: casting.id,
             related_project_id: null,
             related_finance_id: null,
             notes: null
-        })
+        } as any)
     }
 
     // 4. Fitting - SOLO si está seleccionado y NO tiene proyecto (si tiene proyecto, lo gestiona el proyecto)
