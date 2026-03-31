@@ -392,6 +392,10 @@ export default function CastingsPage() {
                 num_travel_days: casting.num_travel_days, horas_extra_convenio: casting.horas_extra_convenio,
                 empresa: null, tarifa_neta_jornada: casting.tarifa_neta_jornada, tarifa_traslado: casting.tarifa_traslado, horas_extra_evento: null,
                 estudio_doblaje: null, num_takes: casting.num_takes, fecha_limite_cobro: null,
+                fecha_inicio_hora: '09:00',
+                prueba_vestuario_hora: '09:00',
+                travel_ida_hora: '09:00',
+                travel_vuelta_hora: '09:00',
             })
             alert(`✅ Proyecto "${casting.proyecto}" creado.`)
         } catch { alert('Error al crear el proyecto.') } finally { setConverting(null) }
