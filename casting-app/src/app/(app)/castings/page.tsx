@@ -441,11 +441,11 @@ export default function CastingsPage() {
                 {/* Received vs Sent Progress Bar */}
                 <div className="card mb-6" style={{ padding: '16px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px', fontWeight: 600 }}>
-                        <span>Progreso de Castings: Recibidos ({data.length}) vs Enviados ({data.filter(c => c.estado !== 'pendiente').length})</span>
-                        <span style={{ color: 'var(--info)' }}>{data.length ? Math.round((data.filter(c => c.estado !== 'pendiente').length / data.length) * 100) : 0}% efectividad</span>
+                        <span>Progreso de Castings: Recibidos ({data.length}) vs Enviados ({data.filter(c => c.estado !== 'pendiente' && c.estado !== 'no_aplicado').length})</span>
+                        <span style={{ color: 'var(--info)' }}>{data.length ? Math.round((data.filter(c => c.estado !== 'pendiente' && c.estado !== 'no_aplicado').length / data.length) * 100) : 0}% efectividad</span>
                     </div>
                     <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden', display: 'flex' }}>
-                        <div style={{ width: `${data.length ? (data.filter(c => c.estado !== 'pendiente').length / data.length) * 100 : 0}%`, background: 'var(--info)', borderRadius: '4px' }} />
+                        <div style={{ width: `${data.length ? (data.filter(c => c.estado !== 'pendiente' && c.estado !== 'no_aplicado').length / data.length) * 100 : 0}%`, background: 'var(--info)', borderRadius: '4px' }} />
                     </div>
                 </div>
 
