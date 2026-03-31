@@ -115,6 +115,7 @@ export interface Casting {
   tarifa_traslado: number | null
   num_takes: number | null
   hora_casting: string | null     // Nueva: Hora para castings presenciales
+  ppm_hora: string | null         // Nueva: Hora para PPM
 }
 
 export type RolActorPublicidad = 'ocp' | 'secundario' | 'fe'
@@ -158,8 +159,13 @@ export interface Proyecto {
   // ── Campos específicos de Doblaje ──────────────────────────────────────
   estudio_doblaje: string | null          // estudio donde se graba el doblaje
   num_takes: number | null                // número de takes del doblaje
-  // ── Finanzas ───────────────────────────────────────────────────────────
+  // ── Finanzas ───────────────────────────────────────────────────────────  // Finanzas
   fecha_limite_cobro: string | null       // fecha límite de cobro calculada
+  // Time fields
+  fecha_inicio_hora: string | null
+  prueba_vestuario_hora: string | null
+  travel_ida_hora: string | null
+  travel_vuelta_hora: string | null
 }
 
 export interface Finanza {
@@ -201,4 +207,5 @@ export interface CalendarEvent {
   related_project_id: string | null  // Nuevo: Referencia a proyectos
   related_finance_id: string | null
   notes: string | null
+  event_time: string | null       // Nueva: Hora del evento
 }

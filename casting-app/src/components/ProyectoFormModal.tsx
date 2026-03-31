@@ -46,6 +46,11 @@ const defaultForm: ProyectoForm = {
     num_takes: null,
     // Finanzas
     fecha_limite_cobro: null,
+    // Time fields
+    fecha_inicio_hora: '09:00',
+    prueba_vestuario_hora: '09:00',
+    travel_ida_hora: '09:00',
+    travel_vuelta_hora: '09:00',
 }
 
 const ROL_LABELS: Record<RolActorPublicidad, string> = {
@@ -551,8 +556,12 @@ export default function ProyectoFormModal({ open, onClose, onSave, initial }: Pr
                         </div>
                         <div className="form-group">
                             <label className="form-label">Fecha/s de Rodaje</label>
-                            <input className="form-input" value={form.fecha_rodaje || ''}
-                                onChange={e => set('fecha_rodaje', e.target.value || null)} placeholder="Ej: 12-13 mar 2026" />
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <input className="form-input" value={form.fecha_rodaje || ''}
+                                    onChange={e => set('fecha_rodaje', e.target.value || null)} placeholder="Ej: 12-13 mar" style={{ flex: 2 }} />
+                                <input type="time" className="form-input" value={form.fecha_inicio_hora || ''}
+                                    onChange={e => set('fecha_inicio_hora', e.target.value)} style={{ flex: 1 }} />
+                            </div>
                         </div>
                     </div>
 
@@ -602,7 +611,15 @@ export default function ProyectoFormModal({ open, onClose, onSave, initial }: Pr
                         <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '14px', marginBottom: '14px' }}>
                             <SectionTitle color="#fbbf24" emoji="👗" title="Fitting" subtitle="— 2h incluidas, se cobra por hora las adicionales" />
                             <div className="form-grid">
-                                <DateInput label="Fecha de Fitting" value={form.prueba_vestuario_fecha} onChange={v => set('prueba_vestuario_fecha', v)} />
+                                <div className="form-group">
+                                    <label className="form-label">Fecha de Fitting</label>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <input type="date" className="form-input" value={form.prueba_vestuario_fecha || ''}
+                                            onChange={e => set('prueba_vestuario_fecha', e.target.value || null)} style={{ flex: 2 }} />
+                                        <input type="time" className="form-input" value={form.prueba_vestuario_hora || ''}
+                                            onChange={e => set('prueba_vestuario_hora', e.target.value)} style={{ flex: 1 }} />
+                                    </div>
+                                </div>
                                 <NumInput label="Horas de fitting extra" hint="por encima de 2h" value={form.horas_fitting_extra} onChange={v => set('horas_fitting_extra', v)} step={0.5} />
                             </div>
                             <div style={{ maxWidth: '50%', marginTop: '8px' }}>
@@ -616,8 +633,24 @@ export default function ProyectoFormModal({ open, onClose, onSave, initial }: Pr
                         <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: '14px', marginBottom: '14px' }}>
                             <SectionTitle color="#60a5fa" emoji="✈️" title="Travel Days" subtitle="— 50% de tarifa jornada por día de viaje" />
                             <div className="form-grid">
-                                <DateInput label="Fecha de Ida" value={form.travel_ida} onChange={v => set('travel_ida', v)} />
-                                <DateInput label="Fecha de Vuelta" value={form.travel_vuelta} onChange={v => set('travel_vuelta', v)} />
+                                <div className="form-group">
+                                    <label className="form-label">Fecha Ida</label>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <input type="date" className="form-input" value={form.travel_ida || ''}
+                                            onChange={e => set('travel_ida', e.target.value || null)} style={{ flex: 2 }} />
+                                        <input type="time" className="form-input" value={form.travel_ida_hora || ''}
+                                            onChange={e => set('travel_ida_hora', e.target.value)} style={{ flex: 1 }} />
+                                    </div>
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Fecha Vuelta</label>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <input type="date" className="form-input" value={form.travel_vuelta || ''}
+                                            onChange={e => set('travel_vuelta', e.target.value || null)} style={{ flex: 2 }} />
+                                        <input type="time" className="form-input" value={form.travel_vuelta_hora || ''}
+                                            onChange={e => set('travel_vuelta_hora', e.target.value)} style={{ flex: 1 }} />
+                                    </div>
+                                </div>
                             </div>
                             <div style={{ maxWidth: '50%', marginTop: '8px' }}>
                                 <NumInput label="Número de travel days (pago)" value={form.num_travel_days} onChange={v => set('num_travel_days', v)} />

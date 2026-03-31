@@ -41,6 +41,7 @@ const defaultForm: CastingForm = {
     fecha_inicio: null,
     fecha_fin: null,
     hora_casting: null,
+    ppm_hora: '12:00',
 }
 
 interface Props {
@@ -354,9 +355,6 @@ export default function CastingFormModal({ open, onClose, onSave, initial }: Pro
                     <select className="form-select" value={form.tipo_casting} onChange={e => {
                         const val = e.target.value as TipoCasting
                         set('tipo_casting', val)
-                        if (val !== 'presencial') {
-                             set('hora_casting', null)
-                        }
                     }}>
                         {TIPOS_CASTING.map(([val, label]) => <option key={val} value={val}>{label}</option>)}
                     </select>
@@ -370,19 +368,17 @@ export default function CastingFormModal({ open, onClose, onSave, initial }: Pro
                 </div>
             </div>
 
-            {form.tipo_casting === 'presencial' && (
-                <div className="form-grid" style={{ background: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '12px', padding: '14px', marginBottom: '20px' }}>
-                    <div className="form-group">
-                        <label className="form-label">⌚ HORA</label>
-                        <input type="time" className="form-input" value={form.hora_casting || ''} onChange={e => set('hora_casting', e.target.value)} />
-                    </div>
-                    <div className="form-group">
-                        <label className="form-label">📍 LUGAR</label>
-                        <input className="form-input" list="lugares-list" value={form.localizacion || ''} onChange={e => set('localizacion', e.target.value)} placeholder="Dirección, estudio…" autoComplete="off" />
-                        <datalist id="lugares-list">{localizaciones.map(n => <option key={n} value={n} />)}</datalist>
-                    </div>
+            <div className="form-grid" style={{ marginBottom: '20px' }}>
+                <div className="form-group">
+                    <label className="form-label">⌚ HORA</label>
+                    <input type="time" className="form-input" value={form.hora_casting || ''} onChange={e => set('hora_casting', e.target.value)} />
                 </div>
-            )}
+                <div className="form-group">
+                    <label className="form-label">📍 LUGAR</label>
+                    <input className="form-input" list="lugares-list" value={form.localizacion || ''} onChange={e => set('localizacion', e.target.value)} placeholder="Dirección, estudio…" autoComplete="off" />
+                    <datalist id="lugares-list">{localizaciones.map(n => <option key={n} value={n} />)}</datalist>
+                </div>
+            </div>
 
             <div className="form-grid">
                 <div className="form-group">

@@ -76,11 +76,12 @@ export async function syncCastingEvents(casting: Casting, userId: string) {
             event_type: 'wardrobe_fitting',
             event_date_start: casting.prueba_vestuario_fecha,
             event_date_end: null,
+            event_time: '09:00',
             related_casting_id: casting.id,
             related_project_id: null,
             related_finance_id: null,
             notes: null
-        })
+        } as any)
     }
 
     // 5. PPM - SOLO si está opcionado y NO tiene proyecto
@@ -91,11 +92,12 @@ export async function syncCastingEvents(casting: Casting, userId: string) {
             event_type: 'opcionado_ppm',
             event_date_start: casting.ppm_fecha,
             event_date_end: null,
+            event_time: casting.ppm_hora || '12:00',
             related_casting_id: casting.id,
             related_project_id: null,
             related_finance_id: null,
             notes: null
-        })
+        } as any)
     }
 
     // 6. Trabajo / Rodaje - SOLO si está seleccionado y NO tiene proyecto
@@ -108,11 +110,12 @@ export async function syncCastingEvents(casting: Casting, userId: string) {
                 event_type: 'shooting_day',
                 event_date_start: casting.fecha_inicio,
                 event_date_end: casting.fecha_fin || casting.fecha_inicio,
+                event_time: '09:00',
                 related_casting_id: casting.id,
                 related_project_id: null,
                 related_finance_id: null,
                 notes: `Rodaje: ${casting.proyecto}`
-            })
+            } as any)
         } 
         // Opción B: Por texto (retrocompatibilidad)
         else if (casting.fechas_rodaje) {
@@ -132,11 +135,12 @@ export async function syncCastingEvents(casting: Casting, userId: string) {
                                 event_type: 'shooting_day',
                                 event_date_start: formattedDate,
                                 event_date_end: null,
+                                event_time: '09:00',
                                 related_casting_id: casting.id,
                                 related_project_id: null,
                                 related_finance_id: null,
                                 notes: casting.fechas_rodaje
-                            })
+                            } as any)
                         }
                     }
                 })
@@ -152,11 +156,12 @@ export async function syncCastingEvents(casting: Casting, userId: string) {
             event_type: 'travel_day',
             event_date_start: casting.travel_ida,
             event_date_end: null,
+            event_time: '09:00',
             related_casting_id: casting.id,
             related_project_id: null,
             related_finance_id: null,
             notes: 'Viaje de ida'
-        })
+        } as any)
     }
     if (!hasProject && casting.travel_vuelta) {
         events.push({
@@ -165,11 +170,12 @@ export async function syncCastingEvents(casting: Casting, userId: string) {
             event_type: 'travel_day',
             event_date_start: casting.travel_vuelta,
             event_date_end: null,
+            event_time: '09:00',
             related_casting_id: casting.id,
             related_project_id: null,
             related_finance_id: null,
             notes: 'Viaje de vuelta'
-        })
+        } as any)
     }
 
     if (events.length > 0) {
@@ -205,6 +211,7 @@ export async function syncFinanceEvents(finanza: Finanza, userId: string) {
             event_type: 'finance_due',
             event_date_start: finanza.fecha_limite_cobro,
             event_date_end: null,
+            event_time: '12:00',
             related_casting_id: null,
             related_project_id: null,
             related_finance_id: finanza.id,
@@ -231,11 +238,12 @@ export async function syncProjectEvents(proyecto: Proyecto, userId: string) {
             event_type: 'shooting_day',
             event_date_start: proyecto.fecha_inicio,
             event_date_end: proyecto.fecha_fin || proyecto.fecha_inicio,
+            event_time: proyecto.fecha_inicio_hora || '09:00',
             related_casting_id: null,
             related_project_id: proyecto.id,
             related_finance_id: null,
             notes: `Personaje: ${proyecto.personaje}`
-        })
+        } as any)
     }
 
     // 2. Fitting
@@ -246,11 +254,12 @@ export async function syncProjectEvents(proyecto: Proyecto, userId: string) {
             event_type: 'wardrobe_fitting',
             event_date_start: proyecto.prueba_vestuario_fecha,
             event_date_end: null,
+            event_time: proyecto.prueba_vestuario_hora || '09:00',
             related_casting_id: null,
             related_project_id: proyecto.id,
             related_finance_id: null,
             notes: null
-        })
+        } as any)
     }
 
     // 3. Travel
@@ -261,11 +270,12 @@ export async function syncProjectEvents(proyecto: Proyecto, userId: string) {
             event_type: 'travel_day',
             event_date_start: proyecto.travel_ida,
             event_date_end: null,
+            event_time: proyecto.travel_ida_hora || '09:00',
             related_casting_id: null,
             related_project_id: proyecto.id,
             related_finance_id: null,
             notes: null
-        })
+        } as any)
     }
     if (proyecto.travel_vuelta) {
         events.push({
@@ -274,11 +284,12 @@ export async function syncProjectEvents(proyecto: Proyecto, userId: string) {
             event_type: 'travel_day',
             event_date_start: proyecto.travel_vuelta,
             event_date_end: null,
+            event_time: proyecto.travel_vuelta_hora || '09:00',
             related_casting_id: null,
             related_project_id: proyecto.id,
             related_finance_id: null,
             notes: null
-        })
+        } as any)
     }
 
     if (events.length > 0) {
