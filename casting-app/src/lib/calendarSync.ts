@@ -16,8 +16,10 @@ export async function syncCastingEvents(casting: Casting, userId: string) {
 
     const hasProject = !!project
 
-    // 2. Borrar eventos previos de este casting
-    await supabase.from('calendar_events').delete().eq('related_casting_id', casting.id)
+    // 2. Borrar eventos previos de este casting (excepto manuales)
+    await supabase.from('calendar_events').delete()
+        .eq('related_casting_id', casting.id)
+        .eq('is_manual', false)
 
     const events: Omit<CalendarEvent, 'id' | 'created_at'>[] = []
 
@@ -196,7 +198,9 @@ export async function syncCastingEvents(casting: Casting, userId: string) {
 export async function syncFinanceEvents(finanza: Finanza, userId: string) {
     if (!finanza.id) return
 
-    await supabase.from('calendar_events').delete().eq('related_finance_id', finanza.id)
+    await supabase.from('calendar_events').delete()
+        .eq('related_finance_id', finanza.id)
+        .eq('is_manual', false)
 
     if (finanza.fecha_limite_cobro) {
         const labels: Record<string, string> = {
@@ -227,7 +231,9 @@ export async function syncFinanceEvents(finanza: Finanza, userId: string) {
 export async function syncProjectEvents(proyecto: Proyecto, userId: string) {
     if (!proyecto.id) return
 
-    await supabase.from('calendar_events').delete().eq('related_project_id', proyecto.id)
+    await supabase.from('calendar_events').delete()
+        .eq('related_project_id', proyecto.id)
+        .eq('is_manual', false)
     const events: any[] = []
 
     // 1. Rango de Trabajo

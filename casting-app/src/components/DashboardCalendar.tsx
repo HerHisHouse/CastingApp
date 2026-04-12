@@ -8,10 +8,12 @@ import {
 import { es } from 'date-fns/locale'
 import {
     ChevronLeft, ChevronRight, X, Calendar as CalendarIcon,
-    Info, ExternalLink, ChevronDown, Trash2
+    Info, ExternalLink, ChevronDown, Trash2, Plus
 } from 'lucide-react'
 import { useCalendarEvents } from '@/hooks/useData'
 import { CalendarEvent, EventType } from '@/lib/supabase'
+import ManualEventModal from './ManualEventModal'
+import { useAuth } from '@/context/AuthContext'
 
 // ── Colores por tipo de evento ──────────────────────────────────────────────
 const EVENT_CONFIG: Record<EventType, { color: string; emoji: string; label: string }> = {
@@ -42,6 +44,8 @@ export default function DashboardCalendar() {
     const [selectedDay, setSelectedDay] = useState<Date | null>(null)
     const [showPicker, setShowPicker] = useState(false)
     const [pickerYear, setPickerYear] = useState(getYear(new Date()))
+    const [manualModalOpen, setManualModalOpen] = useState(false)
+    const { user } = useAuth()
     const pickerRef = useRef<HTMLDivElement>(null)
 
     // All filters active by default
@@ -186,6 +190,21 @@ export default function DashboardCalendar() {
                     >
                         Hoy
                     </button>
+                    
+                    {/* Añadir Evento */}
+                    <button
+                        onClick={() => setManualModalOpen(true)}
+                        style={{
+                            height: 32, padding: '0 12px', borderRadius: '8px',
+                            border: '1px solid var(--accent)', background: 'var(--accent)',
+                            fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                            color: 'white', transition: 'all 0.15s ease',
+                            display: 'flex', alignItems: 'center', gap: '6px'
+                        }}
+                    >
+                        <Plus size={14} />
+                        Evento
+                    </button>
 
                     {/* ── Picker popup ── */}
                     {showPicker && (
@@ -299,7 +318,7 @@ export default function DashboardCalendar() {
                                 {dayEvents.slice(0, 4).map((e, i) => (
                                     <div key={e.id ?? i} style={{
                                         width: '100%', height: '4px', borderRadius: '3px',
-                                        background: EVENT_CONFIG[e.event_type]?.color ?? '#888'
+                                        background: e.is_manual && e.custom_color ? e.custom_color : (EVENT_CONFIG[e.event_type]?.color ?? '#888')
                                     }} title={e.title} />
                                 ))}
                                 {dayEvents.length > 4 && (
@@ -330,6 +349,14 @@ export default function DashboardCalendar() {
                     events={getEventsForDay(selectedDay)}
                     onClose={() => setSelectedDay(null)}
                     onRemove={remove}
+                />
+            )}
+
+            {/* ── Modal de Evento Manual ── */}
+            {manualModalOpen && user && (
+                <ManualEventModal 
+                    userId={user.id}
+                    onClose={() => setManualModalOpen(false)}
                 />
             )}
         </div>
@@ -427,13 +454,13 @@ function DayEventsModal({ day, events, onClose, onRemove }: { day: Date; events:
                                 return (
                                     <div key={e.id ?? i} style={{
                                         padding: '12px 14px', borderRadius: '12px',
-                                        background: `${cfg.color}08`,
-                                        border: `1px solid ${cfg.color}30`,
-                                        borderLeft: `4px solid ${cfg.color}`
+                                        background: e.is_manual && e.custom_color ? `${e.custom_color}08` : `${cfg.color}08`,
+                                        border: `1px solid ${e.is_manual && e.custom_color ? e.custom_color + '30' : cfg.color + '30'}`,
+                                        borderLeft: `4px solid ${e.is_manual && e.custom_color ? e.custom_color : cfg.color}`
                                     }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                                            <span style={{ fontSize: '10px', fontWeight: 700, color: cfg.color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                                {cfg.emoji} {cfg.label}
+                                            <span style={{ fontSize: '10px', fontWeight: 700, color: e.is_manual && e.custom_color ? e.custom_color : cfg.color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                                {e.is_manual ? '📝 MANUAL' : `${cfg.emoji} ${cfg.label}`}
                                             </span>
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>

@@ -182,27 +182,28 @@ function buildNotificationMessage(event: any, advance: string): { title: string;
     else if (advance === '24h') prefix = 'Mañana'
     else {
         const hours = parseInt(advance)
-        prefix = `En ${hours} hora${hours > 1 ? 's' : ''}`
+        prefix = `En ${hours}h`
     }
     
-    const title = event.title
+    // Clean up event title (remove redundant prefixes like "Casting: ")
+    const cleanEventTitle = event.title.replace(/^(Casting|Callback|TRABAJO|Trabajo|PPM|Fitting|Viaje|Cobro):?\s*/i, '')
 
     switch (event.event_type) {
         case 'casting_deadline':
-            return { title: '🎬 Casting', body: `${prefix} — ${event.title}` }
+            return { title: `🎬 ${prefix}: Casting`, body: cleanEventTitle }
         case 'callback':
-            return { title: '📞 Callback', body: `${prefix} tienes callback — ${event.title}` }
+            return { title: `📞 ${prefix}: Callback`, body: cleanEventTitle }
         case 'opcionado_ppm':
-            return { title: '🎯 PPM / Selección', body: `${prefix} finaliza la selección de talentos — ${event.title}` }
+            return { title: `🎯 ${prefix}: PPM`, body: `Finaliza selección de ${cleanEventTitle}` }
         case 'wardrobe_fitting':
-            return { title: '👕 Prueba de vestuario', body: `${prefix} — ${event.title}` }
+            return { title: `👕 ${prefix}: Fitting`, body: cleanEventTitle }
         case 'shooting_day':
-            return { title: '🎥 Rodaje', body: `${prefix} tienes rodaje — ${event.title}` }
+            return { title: `🎥 ${prefix}: Rodaje`, body: cleanEventTitle }
         case 'travel_day':
-            return { title: '✈️ Viaje', body: `${prefix} — Viaje para rodaje ${event.title}` }
+            return { title: `✈️ ${prefix}: Viaje`, body: cleanEventTitle }
         case 'finance_due':
-            return { title: '💰 Cobro pendiente', body: `${prefix} vence el cobro — ${event.title}` }
+            return { title: `💰 ${prefix}: Cobro`, body: cleanEventTitle }
         default:
-            return { title: title, body: `${prefix} — ${event.notes || ''}` }
+            return { title: `${prefix}: ${event.title}`, body: event.notes || '' }
     }
 }

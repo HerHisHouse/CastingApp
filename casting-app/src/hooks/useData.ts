@@ -262,11 +262,17 @@ export function useCalendarEvents() {
 
     useEffect(() => { fetch() }, [fetch])
 
+    const create = async (values: Omit<CalendarEvent, 'id' | 'created_at'>) => {
+        const { error: err } = await supabase.from('calendar_events').insert(values)
+        if (err) throw err
+        await fetch()
+    }
+
     const remove = async (id: string) => {
         const { error: err } = await supabase.from('calendar_events').delete().eq('id', id)
         if (err) throw err
         await fetch()
     }
 
-    return { data, loading, error, refetch: fetch, remove }
+    return { data, loading, error, refetch: fetch, create, remove }
 }

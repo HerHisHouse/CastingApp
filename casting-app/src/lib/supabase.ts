@@ -208,4 +208,6 @@ export interface CalendarEvent {
   related_finance_id: string | null
   notes: string | null
   event_time: string | null       // Nueva: Hora del evento
+  is_manual: boolean              // Nueva: Indica si es creado a mano
+  custom_color: string | null     // Nueva: Color elegido por el usuario
 }
