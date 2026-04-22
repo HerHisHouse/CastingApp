@@ -48,7 +48,7 @@ export default function FinanzasPage() {
         const pendiente = data.filter(f => f.estado_pago !== 'pagado').reduce((s, f) => s + f.cantidad, 0)
         
         const netoCobrado = data.filter(f => f.estado_pago === 'pagado').reduce((s, f) => {
-            if (f.importe_neto !== null) return s + f.importe_neto
+            if (f.importe_neto != null) return s + f.importe_neto
             
             const bruto = f.cantidad
             const comisionImporte = bruto * ((f.comision_representante || 0) / 100)
@@ -113,7 +113,7 @@ function FinanzaMobileCard({
     }
     
     const netoCalculado = bruto - comisionImporte - impuestosImporte - otrosImporte
-    const neto = finanza.importe_neto !== null ? finanza.importe_neto : netoCalculado
+    const neto = finanza.importe_neto != null ? finanza.importe_neto : netoCalculado
 
     return (
         <div className="card" style={{ padding: '16px', marginBottom: '12px' }}>
@@ -174,7 +174,7 @@ function FinanzaMobileCard({
                         </div>
                     ))}
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
-                        <span style={{ color: 'var(--text-secondary)' }}>Neto{finanza.importe_neto !== null ? ' (Manual)' : ''}:</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>Neto{finanza.importe_neto != null ? ' (Manual)' : ''}:</span>
                         <span style={{ color: 'var(--text-primary)' }}>{formatCurrency(neto)}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -319,7 +319,7 @@ function FinanzaMobileCard({
                                             }
                                             
                                             const netoCalculado = bruto - comisionImporte - impuestosImporte - otrosImporte
-                                            const neto = f.importe_neto !== null ? f.importe_neto : netoCalculado
+                                            const neto = f.importe_neto != null ? f.importe_neto : netoCalculado
                                             
                                             return (
                                                 <tr key={f.id}>
@@ -330,7 +330,7 @@ function FinanzaMobileCard({
                                                     <td style={{ color: 'var(--warning)' }}>{f.impuestos_estimados ? `${f.impuestos_estimados.toString().replace('.', ',')}%` : '—'}</td>
                                                     <td style={{ fontWeight: 600 }}>
                                                         {formatCurrency(neto)}
-                                                        {f.importe_neto !== null && <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', fontWeight: 400 }}>(Manual)</span>}
+                                                        {f.importe_neto != null && <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', fontWeight: 400 }}>(Manual)</span>}
                                                     </td>
                                                     <td style={{ whiteSpace: 'nowrap', opacity: f.fecha_factura ? 1 : 0.4 }}>{formatDate(f.fecha_factura) || '—'}</td>
                                                     <td style={{ whiteSpace: 'nowrap', opacity: f.fecha_limite_cobro ? 1 : 0.4 }}>

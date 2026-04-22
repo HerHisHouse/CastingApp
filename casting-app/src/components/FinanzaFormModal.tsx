@@ -105,7 +105,7 @@ export default function FinanzaFormModal({ open, onClose, onSave, initial }: Pro
         (form.comision_representante ?? 0) > 0 || 
         (form.impuestos_estimados ?? 0) > 0 || 
         (form.otros_impuestos?.length ?? 0) > 0 ||
-        form.importe_neto !== null
+        form.importe_neto != null
     )
 
     const addOtroImpuesto = () => {
