@@ -55,6 +55,8 @@ CREATE TABLE IF NOT EXISTS finanzas (
   estado_pago     TEXT NOT NULL CHECK (estado_pago IN ('pendiente','pagado','parcial')) DEFAULT 'pendiente',
   comision_representante NUMERIC(10,2),
   impuestos_estimados    NUMERIC(10,2),
+  importe_neto           NUMERIC(10,2),
+  otros_impuestos        JSONB,
   notas           TEXT
 );
 

@@ -46,11 +46,27 @@ export default function FinanzasPage() {
         const total = data.reduce((s, f) => s + f.cantidad, 0)
         const cobrado = data.filter(f => f.estado_pago === 'pagado').reduce((s, f) => s + f.cantidad, 0)
         const pendiente = data.filter(f => f.estado_pago !== 'pagado').reduce((s, f) => s + f.cantidad, 0)
+        
         const netoCobrado = data.filter(f => f.estado_pago === 'pagado').reduce((s, f) => {
-            const comisionImporte = f.cantidad * ((f.comision_representante || 0) / 100)
-            const impuestosImporte = f.cantidad * ((f.impuestos_estimados || 0) / 100)
-            return s + f.cantidad - comisionImporte - impuestosImporte
+            if (f.importe_neto !== null) return s + f.importe_neto
+            
+            const bruto = f.cantidad
+            const comisionImporte = bruto * ((f.comision_representante || 0) / 100)
+            const impuestosImporte = bruto * ((f.impuestos_estimados || 0) / 100)
+            
+            let otrosImporte = 0
+            if (f.otros_impuestos) {
+                f.otros_impuestos.forEach(imp => {
+                    if (imp.tipo === 'porcentaje') {
+                        otrosImporte += bruto * (imp.valor / 100)
+                    } else {
+                        otrosImporte += (imp.valor || 0)
+                    }
+                })
+            }
+            return s + bruto - comisionImporte - impuestosImporte - otrosImporte
         }, 0)
+        
         return { total, cobrado, pendiente, netoCobrado }
     }, [data])
 
@@ -80,9 +96,24 @@ function FinanzaMobileCard({
     onDelete: (id: string) => void 
 }) {
     const [showMore, setShowMore] = useState(false)
-    const comisionImporte = finanza.cantidad * ((finanza.comision_representante || 0) / 100)
-    const impuestosImporte = finanza.cantidad * ((finanza.impuestos_estimados || 0) / 100)
-    const neto = finanza.cantidad - comisionImporte - impuestosImporte
+    
+    const bruto = finanza.cantidad
+    const comisionImporte = bruto * ((finanza.comision_representante || 0) / 100)
+    const impuestosImporte = bruto * ((finanza.impuestos_estimados || 0) / 100)
+    
+    let otrosImporte = 0
+    if (finanza.otros_impuestos) {
+        finanza.otros_impuestos.forEach(imp => {
+            if (imp.tipo === 'porcentaje') {
+                otrosImporte += bruto * (imp.valor / 100)
+            } else {
+                otrosImporte += (imp.valor || 0)
+            }
+        })
+    }
+    
+    const netoCalculado = bruto - comisionImporte - impuestosImporte - otrosImporte
+    const neto = finanza.importe_neto !== null ? finanza.importe_neto : netoCalculado
 
     return (
         <div className="card" style={{ padding: '16px', marginBottom: '12px' }}>
@@ -134,8 +165,16 @@ function FinanzaMobileCard({
                         <span style={{ color: 'var(--text-secondary)' }}>Impuestos:</span>
                         <span style={{ color: 'var(--warning)' }}>{finanza.impuestos_estimados ? `${finanza.impuestos_estimados}% (${formatCurrency(impuestosImporte)})` : '—'}</span>
                     </div>
+                    {(finanza.otros_impuestos || []).map((imp, i) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: 'var(--text-secondary)' }}>{imp.nombre || 'Deducción'}:</span>
+                            <span style={{ color: 'var(--danger)' }}>
+                                −{formatCurrency(imp.tipo === 'porcentaje' ? bruto * (imp.valor / 100) : imp.valor)}
+                            </span>
+                        </div>
+                    ))}
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
-                        <span style={{ color: 'var(--text-secondary)' }}>Neto:</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>Neto{finanza.importe_neto !== null ? ' (Manual)' : ''}:</span>
                         <span style={{ color: 'var(--text-primary)' }}>{formatCurrency(neto)}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -264,9 +303,24 @@ function FinanzaMobileCard({
                                     </thead>
                                     <tbody>
                                         {filtered.map(f => {
-                                            const comisionImporte = f.cantidad * ((f.comision_representante || 0) / 100)
-                                            const impuestosImporte = f.cantidad * ((f.impuestos_estimados || 0) / 100)
-                                            const neto = f.cantidad - comisionImporte - impuestosImporte
+                                            const bruto = f.cantidad
+                                            const comisionImporte = bruto * ((f.comision_representante || 0) / 100)
+                                            const impuestosImporte = bruto * ((f.impuestos_estimados || 0) / 100)
+                                            
+                                            let otrosImporte = 0
+                                            if (f.otros_impuestos) {
+                                                f.otros_impuestos.forEach(imp => {
+                                                    if (imp.tipo === 'porcentaje') {
+                                                        otrosImporte += bruto * (imp.valor / 100)
+                                                    } else {
+                                                        otrosImporte += (imp.valor || 0)
+                                                    }
+                                                })
+                                            }
+                                            
+                                            const netoCalculado = bruto - comisionImporte - impuestosImporte - otrosImporte
+                                            const neto = f.importe_neto !== null ? f.importe_neto : netoCalculado
+                                            
                                             return (
                                                 <tr key={f.id}>
                                                     <td><div style={{ fontWeight: 600 }}>{f.proyecto_nombre}</div></td>
@@ -274,7 +328,10 @@ function FinanzaMobileCard({
                                                     <td style={{ fontWeight: 600, color: 'var(--success)' }}>{formatCurrency(f.cantidad)}</td>
                                                     <td style={{ color: 'var(--danger)' }}>{f.comision_representante ? `${f.comision_representante.toString().replace('.', ',')}%` : '—'}</td>
                                                     <td style={{ color: 'var(--warning)' }}>{f.impuestos_estimados ? `${f.impuestos_estimados.toString().replace('.', ',')}%` : '—'}</td>
-                                                    <td style={{ fontWeight: 600 }}>{formatCurrency(neto)}</td>
+                                                    <td style={{ fontWeight: 600 }}>
+                                                        {formatCurrency(neto)}
+                                                        {f.importe_neto !== null && <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', fontWeight: 400 }}>(Manual)</span>}
+                                                    </td>
                                                     <td style={{ whiteSpace: 'nowrap', opacity: f.fecha_factura ? 1 : 0.4 }}>{formatDate(f.fecha_factura) || '—'}</td>
                                                     <td style={{ whiteSpace: 'nowrap', opacity: f.fecha_limite_cobro ? 1 : 0.4 }}>
                                                         {f.fecha_limite_cobro ? (

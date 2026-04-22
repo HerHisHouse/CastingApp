@@ -168,6 +168,12 @@ export interface Proyecto {
   travel_vuelta_hora: string | null
 }
 
+export interface OtroImpuesto {
+  nombre: string
+  tipo: 'porcentaje' | 'cantidad'
+  valor: number
+}
+
 export interface Finanza {
   id: string
   created_at: string
@@ -175,6 +181,8 @@ export interface Finanza {
   proyecto_nombre: string
   tipo_ingreso: TipoIngreso
   cantidad: number
+  importe_neto: number | null             // Importe neto manual
+  otros_impuestos: OtroImpuesto[] | null  // Otros impuestos o deducciones
   fecha_factura: string | null
   fecha_pago: string | null
   estado_pago: EstadoPago

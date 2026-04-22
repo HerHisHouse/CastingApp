@@ -1,8 +1,8 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import Modal from '@/components/Modal'
-import { Finanza, TipoIngreso, EstadoPago } from '@/lib/supabase'
-import { Save, Euro, Info } from 'lucide-react'
+import { Finanza, TipoIngreso, EstadoPago, OtroImpuesto } from '@/lib/supabase'
+import { Save, Info, Plus, Trash2 } from 'lucide-react'
 
 type FinanzaForm = Omit<Finanza, 'id' | 'created_at' | 'user_id'>
 
@@ -19,6 +19,8 @@ const defaultForm: FinanzaForm = {
     proyecto_nombre: '',
     tipo_ingreso: 'nomina',
     cantidad: null as unknown as number,   // null → campo vacío
+    importe_neto: null,
+    otros_impuestos: [],
     fecha_factura: new Date().toISOString().split('T')[0],
     fecha_limite_cobro: add90Days(new Date().toISOString().split('T')[0]),
     fecha_pago: null,
@@ -81,18 +83,52 @@ export default function FinanzaFormModal({ open, onClose, onSave, initial }: Pro
         const impuestosPct = form.impuestos_estimados ?? 0
         const comisionImporte = bruto * (comisionPct / 100)
         const impuestosImporte = bruto * (impuestosPct / 100)
-        const neto = bruto - comisionImporte - impuestosImporte
-        return { comisionImporte, impuestosImporte, neto }
-    }, [bruto, form.comision_representante, form.impuestos_estimados])
+        
+        let otrosImporte = 0
+        if (form.otros_impuestos) {
+            form.otros_impuestos.forEach(imp => {
+                if (imp.tipo === 'porcentaje') {
+                    otrosImporte += bruto * (imp.valor / 100)
+                } else {
+                    otrosImporte += (imp.valor || 0)
+                }
+            })
+        }
+        
+        const netoCalculado = bruto - comisionImporte - impuestosImporte - otrosImporte
+        const neto = form.importe_neto || netoCalculado
+        
+        return { comisionImporte, impuestosImporte, otrosImporte, netoCalculado, neto }
+    }, [bruto, form.comision_representante, form.impuestos_estimados, form.otros_impuestos, form.importe_neto])
 
-    const hasCalc = bruto > 0 && ((form.comision_representante ?? 0) > 0 || (form.impuestos_estimados ?? 0) > 0)
+    const hasCalc = bruto > 0 && (
+        (form.comision_representante ?? 0) > 0 || 
+        (form.impuestos_estimados ?? 0) > 0 || 
+        (form.otros_impuestos?.length ?? 0) > 0 ||
+        form.importe_neto !== null
+    )
+
+    const addOtroImpuesto = () => {
+        const nuevos = [...(form.otros_impuestos || []), { nombre: '', tipo: 'porcentaje' as const, valor: 0 }]
+        set('otros_impuestos', nuevos)
+    }
+
+    const removeOtroImpuesto = (index: number) => {
+        const nuevos = (form.otros_impuestos || []).filter((_, i) => i !== index)
+        set('otros_impuestos', nuevos)
+    }
+
+    const updateOtroImpuesto = (index: number, field: keyof OtroImpuesto, value: any) => {
+        const nuevos = [...(form.otros_impuestos || [])]
+        nuevos[index] = { ...nuevos[index], [field]: value }
+        set('otros_impuestos', nuevos)
+    }
 
     const handleSave = async () => {
         if (!form.proyecto_nombre) { setError('El nombre del proyecto es obligatorio.'); return }
         if (!form.cantidad || form.cantidad <= 0) { setError('La cantidad debe ser mayor que 0.'); return }
         setSaving(true); setError(null)
         try {
-            // Guardar los porcentajes tal cual — el consumidor los interpreta como %
             await onSave(form)
             onClose()
         } catch (e: unknown) {
@@ -226,13 +262,94 @@ export default function FinanzaFormModal({ open, onClose, onSave, initial }: Pro
                 </div>
             </div>
 
+            {/* Otros impuestos y deducciones */}
+            <div style={{ marginTop: '16px', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label className="form-label" style={{ marginBottom: 0 }}>Otras Deducciones / Impuestos</label>
+                    <button className="btn btn-ghost btn-sm" onClick={addOtroImpuesto} style={{ height: '24px', padding: '0 8px', fontSize: '11px' }}>
+                        <Plus size={12} /> Añadir
+                    </button>
+                </div>
+                
+                {(form.otros_impuestos || []).length === 0 && (
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic', padding: '8px', border: '1px dashed var(--border)', borderRadius: '6px', textAlign: 'center' }}>
+                        No hay deducciones adicionales. Por ejemplo: Aportación trabajador, cuotas, etc.
+                    </div>
+                )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {(form.otros_impuestos || []).map((imp, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                            <div style={{ flex: 2 }}>
+                                <input
+                                    className="form-input form-input-sm"
+                                    value={imp.nombre}
+                                    onChange={e => updateOtroImpuesto(idx, 'nombre', e.target.value)}
+                                    placeholder="Nombre"
+                                />
+                            </div>
+                            <div style={{ flex: 1.2 }}>
+                                <select
+                                    className="form-select form-input-sm"
+                                    value={imp.tipo}
+                                    onChange={e => updateOtroImpuesto(idx, 'tipo', e.target.value)}
+                                >
+                                    <option value="porcentaje">% bruto</option>
+                                    <option value="cantidad">Fijo (€)</option>
+                                </select>
+                            </div>
+                            <div style={{ flex: 1, position: 'relative' }}>
+                                <input
+                                    type="number"
+                                    className="form-input form-input-sm"
+                                    style={{ paddingRight: imp.tipo === 'porcentaje' ? '20px' : '8px' }}
+                                    value={imp.valor || ''}
+                                    onChange={e => updateOtroImpuesto(idx, 'valor', parseFloat(e.target.value) || 0)}
+                                    placeholder="0"
+                                />
+                                {imp.tipo === 'porcentaje' && (
+                                    <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', fontSize: '11px', color: 'var(--text-secondary)' }}>%</span>
+                                )}
+                            </div>
+                            <button className="btn btn-icon btn-ghost" onClick={() => removeOtroImpuesto(idx)} style={{ color: 'var(--danger)', marginTop: '4px' }}>
+                                <Trash2 size={14} />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Importe Neto Manual */}
+            <div className="form-group">
+                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Importe Neto Real (Manual)</span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-secondary)', opacity: 0.7 }}>Opcional: Si es distinto al calculado</span>
+                </label>
+                <div style={{ position: 'relative' }}>
+                    <span style={{
+                        position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)',
+                        color: 'var(--text-secondary)', fontSize: '14px', pointerEvents: 'none',
+                    }}>€</span>
+                    <input
+                        type="number"
+                        className="form-input"
+                        style={{ paddingLeft: '28px', background: form.importe_neto ? 'rgba(52,211,153,0.05)' : undefined }}
+                        value={form.importe_neto ?? ''}
+                        onChange={e => set('importe_neto', e.target.value === '' ? null : parseFloat(e.target.value))}
+                        placeholder={eco.netoCalculado.toFixed(2)}
+                        min="0"
+                        step="0.01"
+                    />
+                </div>
+            </div>
+
             {/* Resumen neto */}
             {hasCalc && (
                 <div style={{
                     padding: '12px 14px', borderRadius: '8px',
                     background: 'rgba(52,211,153,0.06)',
                     border: '1px solid rgba(52,211,153,0.18)',
-                    marginBottom: '4px',
+                    marginBottom: '16px',
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                         <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Bruto</span>
@@ -250,12 +367,22 @@ export default function FinanzaFormModal({ open, onClose, onSave, initial }: Pro
                             <span style={{ fontSize: '13px', color: 'var(--danger)' }}>− {fmt(eco.impuestosImporte)}</span>
                         </div>
                     )}
+                    {(form.otros_impuestos || []).map((imp, idx) => (
+                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{imp.nombre || 'Deducción'} {imp.tipo === 'porcentaje' ? `(${imp.valor}%)` : ''}</span>
+                            <span style={{ fontSize: '13px', color: 'var(--danger)' }}>− {fmt(imp.tipo === 'porcentaje' ? bruto * (imp.valor / 100) : imp.valor)}</span>
+                        </div>
+                    ))}
                     <div style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         borderTop: '1px solid rgba(52,211,153,0.2)', paddingTop: '8px', marginTop: '4px',
                     }}>
-                        <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--success)' }}>Neto estimado</span>
-                        <span style={{ fontSize: '17px', fontWeight: 700, color: 'var(--success)', letterSpacing: '-0.5px' }}>{fmt(eco.neto)}</span>
+                        <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--success)' }}>
+                            {form.importe_neto ? 'Neto Manual' : 'Neto estimado'}
+                        </span>
+                        <span style={{ fontSize: '17px', fontWeight: 700, color: 'var(--success)', letterSpacing: '-0.5px' }}>
+                            {fmt(eco.neto)}
+                        </span>
                     </div>
                 </div>
             )}
@@ -273,19 +400,18 @@ export default function FinanzaFormModal({ open, onClose, onSave, initial }: Pro
                 </div>
                 <div className="form-group">
                     <label className="form-label">
-                        Fecha Límite de Cobro
-                        <span style={{ marginLeft: '5px', fontSize: '9.5px', color: 'var(--text-secondary)', opacity: 0.7 }}>+90 días</span>
+                        Fecha Límite
+                        <span style={{ marginLeft: '5px', fontSize: '9.5px', color: 'var(--text-secondary)', opacity: 0.7 }}>+90d</span>
                     </label>
                     <input
                         type="date"
                         className="form-input"
-                        style={{ color: form.fecha_limite_cobro ? 'var(--warning)' : undefined }}
                         value={form.fecha_limite_cobro || ''}
                         onChange={e => set('fecha_limite_cobro', e.target.value || null)}
                     />
                 </div>
                 <div className="form-group">
-                    <label className="form-label">Estado de Pago</label>
+                    <label className="form-label">Estado</label>
                     <select
                         className="form-select"
                         value={form.estado_pago}
@@ -296,7 +422,6 @@ export default function FinanzaFormModal({ open, onClose, onSave, initial }: Pro
                 </div>
             </div>
 
-            {/* Fecha real de pago — solo si pagado */}
             {form.estado_pago !== 'pendiente' && (
                 <div className="form-group">
                     <label className="form-label">Fecha de Pago Real</label>
@@ -309,41 +434,13 @@ export default function FinanzaFormModal({ open, onClose, onSave, initial }: Pro
                 </div>
             )}
 
-            {/* Aviso fecha límite */}
-            {form.fecha_limite_cobro && form.estado_pago === 'pendiente' && (() => {
-                const limite = new Date(form.fecha_limite_cobro + 'T12:00:00')
-                const hoy = new Date()
-                const diasRestantes = Math.ceil((limite.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
-                if (diasRestantes <= 30 && diasRestantes > 0) {
-                    return (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '8px', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)' }}>
-                            <Info size={12} color="var(--danger)" />
-                            <span style={{ fontSize: '11.5px', color: 'var(--danger)' }}>
-                                ⚠️ Quedan <strong>{diasRestantes} días</strong> para reclamar este cobro.
-                            </span>
-                        </div>
-                    )
-                }
-                if (diasRestantes <= 0) {
-                    return (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '8px', background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.3)' }}>
-                            <Info size={12} color="var(--danger)" />
-                            <span style={{ fontSize: '11.5px', color: 'var(--danger)', fontWeight: 600 }}>
-                                🚨 El plazo de cobro ha vencido. Reclama cuanto antes.
-                            </span>
-                        </div>
-                    )
-                }
-                return null
-            })()}
-
             <div className="form-group" style={{ marginTop: '4px' }}>
                 <label className="form-label">Notas</label>
                 <textarea
                     className="form-textarea"
                     value={form.notas || ''}
                     onChange={e => set('notas', e.target.value || null)}
-                    placeholder="Datos adicionales, detalles del contrato, etc."
+                    placeholder="Datos adicionales..."
                 />
             </div>
         </Modal>
