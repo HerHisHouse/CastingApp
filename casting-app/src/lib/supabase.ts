@@ -181,8 +181,8 @@ export interface Finanza {
   proyecto_nombre: string
   tipo_ingreso: TipoIngreso
   cantidad: number
-  importe_neto: number | null             // Importe neto manual
-  otros_impuestos: OtroImpuesto[] | null  // Otros impuestos o deducciones
+  importe_neto?: number | null             // Importe neto manual
+  otros_impuestos?: OtroImpuesto[] | null  // Otros impuestos o deducciones
   fecha_factura: string | null
   fecha_pago: string | null
   estado_pago: EstadoPago

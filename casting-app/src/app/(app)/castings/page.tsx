@@ -361,7 +361,9 @@ export default function CastingsPage() {
                 await createFinanza({
                     proyecto_id: null, proyecto_nombre: form.proyecto, tipo_ingreso: 'callback', cantidad: form.tarifa_callback!,
                     fecha_factura: fechaBase, fecha_limite_cobro: fechaLimite, fecha_pago: null, estado_pago: 'pendiente',
-                    comision_representante: null, impuestos_estimados: null, notas: `Callback ${form.tipo_callback === 'zoom' ? 'online/Zoom' : 'presencial'} · ${form.personaje} · Descartado`,
+                    comision_representante: null, impuestos_estimados: null, 
+                    importe_neto: null, otros_impuestos: [],
+                    notas: `Callback ${form.tipo_callback === 'zoom' ? 'online/Zoom' : 'presencial'} · ${form.personaje} · Descartado`,
                 })
             }
         }
