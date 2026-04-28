@@ -6,7 +6,7 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     LineChart, Line, PieChart, Pie, Cell
 } from 'recharts'
-import { Film, Clapperboard, DollarSign, TrendingUp, PhoneCall, Trophy, Star, Eye, EyeOff, Calendar } from 'lucide-react'
+import { Film, Clapperboard, DollarSign, TrendingUp, PhoneCall, Trophy, Eye, EyeOff, Calendar } from 'lucide-react'
 import { useState } from 'react'
 import DashboardCalendar from '@/components/DashboardCalendar'
 
@@ -144,7 +144,13 @@ export default function DashboardPage() {
     return (
         <>
             <div className="page-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                <Star size={24} color="#9d8fff" fill="#9d8fff" style={{ marginBottom: '8px' }} />
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="32" height="32" style={{ marginBottom: '8px' }}>
+                    <rect width="40" height="40" rx="9" fill="#12101e"/>
+                    <polygon points="10,8 10,32 30,20" fill="#7c6af7" opacity="0.18"/>
+                    <polygon points="10,8 10,20 20,14" fill="#7c6af7"/>
+                    <polygon points="10,20 10,32 20,26" fill="#a78bfa"/>
+                    <polygon points="20,14 20,26 30,20" fill="#534AB7"/>
+                </svg>
                 <h2 style={{ margin: 0 }}>Dashboard</h2>
                 <p style={{ margin: 0 }}>{now.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>

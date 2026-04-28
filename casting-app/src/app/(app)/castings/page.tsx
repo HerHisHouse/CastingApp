@@ -9,8 +9,8 @@ import {
 import { Casting, EstadoCasting } from '@/lib/supabase'
 import {
     Film, Plus, Search, Pencil, Trash2,
-    Clapperboard, ChevronDown, CheckCircle2, Circle, Bell, X,
-    Eye, EyeOff
+    Clapperboard, ChevronDown, CheckCircle2, Circle, X,
+    Eye, EyeOff, Download
 } from 'lucide-react'
 
 const ESTADOS_OPCIONES: { val: EstadoCasting; label: string; color: string }[] = [
@@ -150,22 +150,13 @@ function DeadlineBadge({ date }: { date: string }) {
     const deadline = new Date(date + 'T23:59:59')
     const diffH = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60)
 
-    if (diffH <= 0) return <span style={{ fontSize: '10px', color: 'var(--danger)', fontWeight: 700 }}>¡PLAZO VENCIDO!</span>
+    // Solo urgente si quedan menos de 48h Y la fecha no ha pasado
+    if (diffH > 0 && diffH <= 12) return <span style={{ fontSize: '11px', color: 'var(--danger)', fontWeight: 700 }}>⚡ {formatDate(date)}</span>
+    if (diffH > 0 && diffH <= 24) return <span style={{ fontSize: '11px', color: 'var(--warning)', fontWeight: 700 }}>⚡ {formatDate(date)}</span>
+    if (diffH > 0 && diffH <= 48) return <span style={{ fontSize: '11px', color: '#60a5fa', fontWeight: 600 }}>{formatDate(date)}</span>
 
-    let color = 'var(--text-secondary)'
-    let label = ''
-
-    if (diffH <= 12) { color = 'var(--danger)'; label = '12h' }
-    else if (diffH <= 24) { color = 'var(--warning)'; label = '24h' }
-    else if (diffH <= 48) { color = '#60a5fa'; label = '48h' }
-    else return <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{formatDate(date)}</span>
-
-    return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color, fontWeight: 700, fontSize: '11px' }}>
-            <Bell size={10} />
-            {label}
-        </div>
-    )
+    // Fecha pasada o futura normal: mostrar sin dramatismo
+    return <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{formatDate(date)}</span>
 }
 
 // ── Inline estado badge + dropdown ──────────────────────────────────────────
@@ -247,8 +238,20 @@ function CastingMobileCard({
 }) {
     const [showMore, setShowMore] = useState(false)
 
+    // Color band based on state
+    const bandColor = casting.estado === 'seleccionado' ? 'var(--success)'
+        : casting.estado === 'descartado' ? 'rgba(255,255,255,0.1)'
+        : casting.tuvo_callback ? 'var(--warning)'
+        : casting.fue_opcionado ? '#f97316'
+        : casting.estado === 'enviado' ? 'var(--accent)'
+        : 'rgba(255,255,255,0.06)'
+
     return (
-        <div className="card" style={{ padding: '16px', marginBottom: '12px' }}>
+        <div className="card" style={{ 
+            padding: '16px', marginBottom: '12px',
+            borderLeft: `3px solid ${bandColor}`,
+            opacity: casting.estado === 'descartado' ? 0.7 : 1,
+        }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                     <BadgeTipoProyecto tipo={casting.tipo_proyecto} />
@@ -406,6 +409,31 @@ export default function CastingsPage() {
     const openEdit = (c: Casting) => { setEditing(c); setModalOpen(true) }
     const openNew = () => { setEditing(null); setModalOpen(true) }
 
+    const exportCSV = () => {
+        const progresion = (c: Casting) => {
+            const tags = []
+            if (c.fue_opcionado) tags.push('Opcionado')
+            if (c.tuvo_callback) tags.push('Callback')
+            if (c.estado === 'seleccionado') tags.push('Seleccionado')
+            if (c.estado === 'descartado') tags.push('Descartado')
+            return tags.join(', ') || 'En proceso'
+        }
+        const tipoLabel: Record<string, string> = { serie: 'Serie', cine: 'Cine', publicidad: 'Publicidad', teatro: 'Teatro', doblaje: 'Doblaje' }
+        const headers = ['Proyecto','Personaje','Tipo','Localización','Director Casting','Fecha Casting','Fecha Entrega','Progresión','Estado']
+        const rows = filtered.map(c => [
+            c.proyecto, c.personaje, tipoLabel[c.tipo_proyecto] || c.tipo_proyecto,
+            c.localizacion || '', c.director_casting || '',
+            c.fecha_casting || '', c.fecha_casting || '',
+            progresion(c), c.estado
+        ])
+        const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url; a.download = `cache-castings-${new Date().toISOString().split('T')[0]}.csv`
+        a.click(); URL.revokeObjectURL(url)
+    }
+
     return (
         <>
             <div className="page-header">
@@ -414,7 +442,10 @@ export default function CastingsPage() {
                         <h2>Castings</h2>
                         <p>{data.length} castings registrados</p>
                     </div>
-                    <button className="btn btn-primary" onClick={openNew}><Plus size={14} /> Nuevo Casting</button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <button className="btn btn-secondary" onClick={exportCSV}><Download size={14} /> Exportar CSV</button>
+                        <button className="btn btn-primary" onClick={openNew}><Plus size={14} /> Nuevo Casting</button>
+                    </div>
                 </div>
             </div>
 

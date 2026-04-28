@@ -4,7 +4,8 @@ import { useFinanzas } from '@/hooks/useData'
 import FinanzaFormModal from '@/components/FinanzaFormModal'
 import { formatDate, formatCurrency, LoadingSkeleton, EmptyState } from '@/components/ui'
 import { Finanza, EstadoPago, TipoIngreso } from '@/lib/supabase'
-import { DollarSign, Plus, Search, Pencil, Trash2, TrendingUp, Clock, CheckCircle, Eye, EyeOff } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
+import { DollarSign, Plus, Search, Pencil, Trash2, TrendingUp, Clock, CheckCircle, Eye, EyeOff, Download, ChevronDown, FileText } from 'lucide-react'
 
 function BadgePago({ estado }: { estado: EstadoPago }) {
     return <span className={`badge badge-${estado}`}>
@@ -33,6 +34,8 @@ export default function FinanzasPage() {
         }
         return true
     })
+    const [showExportMenu, setShowExportMenu] = useState(false)
+    const { username } = useAuth()
 
     const filtered = useMemo(() =>
         data.filter(f => {
@@ -201,6 +204,72 @@ function FinanzaMobileCard({
     )
 }
 
+
+    const calcNeto = (f: Finanza) => {
+        const bruto = f.cantidad
+        const comisionImporte = bruto * ((f.comision_representante || 0) / 100)
+        const impuestosImporte = bruto * ((f.impuestos_estimados || 0) / 100)
+        let otrosImporte = 0
+        if (f.otros_impuestos) f.otros_impuestos.forEach(imp => { otrosImporte += imp.tipo === 'porcentaje' ? bruto * (imp.valor / 100) : (imp.valor || 0) })
+        return f.importe_neto != null ? f.importe_neto : bruto - comisionImporte - impuestosImporte - otrosImporte
+    }
+
+    const exportCSV = () => {
+        const tipoLabel: Record<string, string> = { nomina: 'Nómina', derechos_imagen: 'Derechos', buyout: 'Buyout', royalties: 'Royalties', callback: 'Callback' }
+        const headers = ['Proyecto','Tipo','Cantidad','Comisión %','Impuestos %','Neto','Fecha Factura','Fecha Límite','Fecha Pago','Estado']
+        const rows = filtered.map(f => [
+            f.proyecto_nombre, tipoLabel[f.tipo_ingreso] || f.tipo_ingreso,
+            f.cantidad.toFixed(2), f.comision_representante || 0, f.impuestos_estimados || 0,
+            calcNeto(f).toFixed(2), f.fecha_factura || '', f.fecha_limite_cobro || '', f.fecha_pago || '', f.estado_pago
+        ])
+        const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url; a.download = `cache-finanzas-${new Date().toISOString().split('T')[0]}.csv`
+        a.click(); URL.revokeObjectURL(url)
+    }
+
+    const exportPDF = async () => {
+        const { default: jsPDF } = await import('jspdf')
+        const { default: autoTable } = await import('jspdf-autotable')
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+        const now = new Date()
+        const dateStr = now.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })
+        const filterLabel = estadoFilter ? estadoFilter.charAt(0).toUpperCase() + estadoFilter.slice(1) : 'Todos'
+        doc.setFillColor(18, 16, 30); doc.rect(0, 0, 297, 25, 'F')
+        doc.setFontSize(18); doc.setTextColor(167, 139, 250); doc.text('Caché', 14, 16)
+        doc.setFontSize(9); doc.setTextColor(150, 150, 180); doc.text('Gestiona tu carrera artística', 14, 22)
+        doc.setFontSize(10); doc.setTextColor(200, 200, 220)
+        doc.text(`${username || 'Usuario'} — Exportado el ${dateStr}`, 297 - 14, 16, { align: 'right' })
+        doc.text(`Filtro: ${filterLabel}`, 297 - 14, 22, { align: 'right' })
+        doc.setFontSize(8); doc.setTextColor(100, 100, 130)
+        doc.text(`Total: ${formatCurrency(totals.total)}   Cobrado: ${formatCurrency(totals.cobrado)}   Pendiente: ${formatCurrency(totals.pendiente)}   Neto: ${formatCurrency(totals.netoCobrado)}`, 14, 32)
+        const tipoLabel: Record<string, string> = { nomina: 'Nómina', derechos_imagen: 'Derechos', buyout: 'Buyout', royalties: 'Royalties', callback: 'Callback' }
+        const tableRows = filtered.map(f => [
+            f.proyecto_nombre, tipoLabel[f.tipo_ingreso] || f.tipo_ingreso,
+            `${f.cantidad.toFixed(2)} €`, f.comision_representante ? `${f.comision_representante}%` : '—',
+            f.impuestos_estimados ? `${f.impuestos_estimados}%` : '—',
+            `${calcNeto(f).toFixed(2)} €`, f.fecha_factura || '—', f.fecha_limite_cobro || '—', f.fecha_pago || '—', f.estado_pago
+        ])
+        autoTable(doc, {
+            startY: 37,
+            head: [['Proyecto','Tipo','Cantidad','Comisión','IRPF','Neto','F. Factura','F. Límite','F. Pago','Estado']],
+            body: tableRows,
+            styles: { fontSize: 7.5, cellPadding: 2.5, textColor: [220, 220, 240] as [number,number,number] },
+            headStyles: { fillColor: [30, 27, 60] as [number,number,number], textColor: [167, 139, 250] as [number,number,number], fontStyle: 'bold', fontSize: 8 },
+            alternateRowStyles: { fillColor: [20, 18, 35] as [number,number,number] },
+            margin: { left: 14, right: 14 },
+        })
+        const pageCount = (doc as any).internal.getNumberOfPages()
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i); doc.setFontSize(7); doc.setTextColor(80, 80, 110)
+            doc.text('Caché — Gestiona tu carrera artística', 14, doc.internal.pageSize.height - 6)
+            doc.text(`Página ${i} de ${pageCount}`, 297 - 14, doc.internal.pageSize.height - 6, { align: 'right' })
+        }
+        doc.save(`cache-finanzas-${now.toISOString().split('T')[0]}.pdf`)
+    }
+
     return (
         <>
             <div className="page-header">
@@ -209,11 +278,44 @@ function FinanzaMobileCard({
                         <h2>Finanzas</h2>
                         <p>Gestión de ingresos y pagos</p>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '8px', position: 'relative' }}>
                         <button className="btn btn-secondary" onClick={toggleAmounts}>
                             {showAmounts ? <EyeOff size={14} /> : <Eye size={14} />}
                             <span className="desktop-only">{showAmounts ? 'Ocultar' : 'Mostrar'}</span>
                         </button>
+                        <div style={{ position: 'relative' }}>
+                            <button className="btn btn-secondary" onClick={() => setShowExportMenu(v => !v)}>
+                                <Download size={14} />
+                                <span className="desktop-only">Exportar</span>
+                                <ChevronDown size={12} />
+                            </button>
+                            {showExportMenu && (
+                                <div style={{
+                                    position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 200,
+                                    background: 'var(--bg-card)', border: '1px solid var(--border-light)',
+                                    borderRadius: '10px', padding: '6px', minWidth: '160px',
+                                    boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                                    animation: 'scaleUp 0.1s ease-out',
+                                }}>
+                                    <button onClick={() => { exportCSV(); setShowExportMenu(false) }} style={{
+                                        display: 'flex', alignItems: 'center', gap: '10px',
+                                        width: '100%', padding: '9px 12px', borderRadius: '7px',
+                                        background: 'transparent', border: 'none', cursor: 'pointer',
+                                        color: 'var(--text-primary)', fontSize: '13px', fontFamily: 'inherit', textAlign: 'left',
+                                    }}>
+                                        <Download size={14} color="var(--accent-light)" /> Exportar CSV
+                                    </button>
+                                    <button onClick={() => { exportPDF(); setShowExportMenu(false) }} style={{
+                                        display: 'flex', alignItems: 'center', gap: '10px',
+                                        width: '100%', padding: '9px 12px', borderRadius: '7px',
+                                        background: 'transparent', border: 'none', cursor: 'pointer',
+                                        color: 'var(--text-primary)', fontSize: '13px', fontFamily: 'inherit', textAlign: 'left',
+                                    }}>
+                                        <FileText size={14} color="var(--danger)" /> Exportar PDF
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                         <button className="btn btn-primary" onClick={openNew}>
                             <Plus size={14} /> Nuevo Ingreso
                         </button>
