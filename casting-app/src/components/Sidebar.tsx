@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
     LayoutDashboard, Film, Clapperboard, DollarSign,
-    Users, BarChart3, Star, Menu, X, Settings, LogOut,
+    Users, BarChart3, Menu, X, Settings, LogOut,
     Bell, Info, AlertTriangle
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
@@ -74,11 +74,19 @@ export default function Sidebar() {
             <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
                 <div className="sidebar-logo" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Star size={18} color="#9d8fff" fill="#9d8fff" />
-                            <h1>CastingApp</h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="32" height="32" style={{ flexShrink: 0 }}>
+                                <rect width="40" height="40" rx="9" fill="#12101e"/>
+                                <polygon points="10,8 10,32 30,20" fill="#7c6af7" opacity="0.18"/>
+                                <polygon points="10,8 10,20 20,14" fill="#7c6af7"/>
+                                <polygon points="10,20 10,32 20,26" fill="#a78bfa"/>
+                                <polygon points="20,14 20,26 30,20" fill="#534AB7"/>
+                            </svg>
+                            <h1 style={{ margin: 0 }}>
+                                <span style={{ color: '#ffffff' }}>Cach</span><span style={{ color: '#a78bfa' }}>é</span>
+                            </h1>
                         </div>
-                        <p>Gestiona Castings y trabajos</p>
+                        <p>Gestiona tu carrera artística</p>
                     </div>
                     <button className="mobile-close-btn" onClick={() => setIsOpen(false)}>
                         <X size={20} />

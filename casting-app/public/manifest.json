@@ -1,7 +1,7 @@
 {
-  "name": "CastingApp Pro",
-  "short_name": "CastingApp",
-  "description": "Tu mánager personal para castings y proyectos de actuación.",
+  "name": "Caché",
+  "short_name": "Caché",
+  "description": "Gestiona tu carrera artística: castings, proyectos y finanzas.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#09090b",

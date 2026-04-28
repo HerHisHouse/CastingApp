@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signUp, signIn } from '@/lib/auth'
-import { Star, Eye, EyeOff, Loader2, ArrowRight, UserPlus } from 'lucide-react'
+import { Eye, EyeOff, Loader2, ArrowRight, UserPlus } from 'lucide-react'
 
 type Mode = 'login' | 'register'
 
@@ -128,18 +128,26 @@ export default function AuthPage() {
                 {/* Brand */}
                 <div className="auth-brand">
                     <div style={{
-                        width: 56, height: 56, borderRadius: '16px',
-                        background: 'linear-gradient(135deg, rgba(124,106,247,0.3) 0%, rgba(157,143,255,0.15) 100%)',
+                        width: 64, height: 64, borderRadius: '16px',
+                        background: 'linear-gradient(135deg, rgba(124,106,247,0.2) 0%, rgba(18,16,30,0.8) 100%)',
                         border: '1px solid rgba(124,106,247,0.4)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        margin: '0 auto 14px',
-                        boxShadow: '0 8px 32px rgba(124,106,247,0.2)',
+                        margin: '0 auto 16px',
+                        boxShadow: '0 8px 32px rgba(124,106,247,0.25)',
                     }}>
-                        <Star size={26} color="#9d8fff" fill="#9d8fff" />
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="44" height="44">
+                            <rect width="40" height="40" rx="9" fill="#12101e"/>
+                            <polygon points="10,8 10,32 30,20" fill="#7c6af7" opacity="0.18"/>
+                            <polygon points="10,8 10,20 20,14" fill="#7c6af7"/>
+                            <polygon points="10,20 10,32 20,26" fill="#a78bfa"/>
+                            <polygon points="20,14 20,26 30,20" fill="#534AB7"/>
+                        </svg>
                     </div>
-                    <h1 className="auth-title">CastingApp</h1>
+                    <h1 className="auth-title">
+                        <span style={{ color: '#ffffff' }}>Cach</span><span style={{ color: '#a78bfa' }}>é</span>
+                    </h1>
                     <p className="auth-subtitle">
-                        Gestiona todos tus castings y lleva la contabilidad de tus trabajos
+                        Gestiona tu carrera artística: castings, proyectos y finanzas
                     </p>
                 </div>
 

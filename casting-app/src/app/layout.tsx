@@ -4,20 +4,24 @@ import { AuthProvider } from "@/context/AuthContext";
 import { NotificationProvider } from "@/context/NotificationContext";
 
 export const metadata: Metadata = {
-    title: "CastingApp — Tu mánager de castings y proyectos",
+    title: "Caché — Gestiona tu carrera artística",
     description: "Plataforma personal para actores para gestionar castings, proyectos y finanzas.",
     manifest: "/manifest.json",
     appleWebApp: {
         capable: true,
         statusBarStyle: "default",
-        title: "CastingApp",
+        title: "Caché",
     },
     formatDetection: {
         telephone: false,
     },
     icons: {
+        icon: [
+            { url: '/favicon.svg', type: 'image/svg+xml' },
+            { url: '/favicon.png', type: 'image/png' },
+        ],
         shortcut: "/icons/icon-192x192.png",
-        apple: "/icons/icon-192x192.png",
+        apple: "/apple-touch-icon.png",
     },
 };
 
