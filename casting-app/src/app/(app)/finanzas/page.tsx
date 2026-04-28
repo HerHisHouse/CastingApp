@@ -272,13 +272,12 @@ function FinanzaMobileCard({
 
     return (
         <>
-            <div className="page-header">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div>
-                        <h2>Finanzas</h2>
-                        <p>Gestión de ingresos y pagos</p>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', position: 'relative' }}>
+            <div className="page-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '16px' }}>
+                <div>
+                    <h2 style={{ margin: 0 }}>Finanzas</h2>
+                    <p style={{ margin: 0 }}>Gestión de ingresos y pagos</p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', position: 'relative', flexWrap: 'wrap', justifyContent: 'center' }}>
                         <button className="btn btn-secondary" onClick={toggleAmounts}>
                             {showAmounts ? <EyeOff size={14} /> : <Eye size={14} />}
                             <span className="desktop-only">{showAmounts ? 'Ocultar' : 'Mostrar'}</span>
@@ -320,7 +319,6 @@ function FinanzaMobileCard({
                             <Plus size={14} /> Nuevo Ingreso
                         </button>
                     </div>
-                </div>
             </div>
 
             <div className="page-body">

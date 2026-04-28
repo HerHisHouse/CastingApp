@@ -244,11 +244,12 @@ export default function EstadisticasPage() {
         })
         return Object.entries(years).map(([year, data]) => ({ year, ...data })).sort((a, b) => Number(a.year) - Number(b.year))
     }, [castings])
-    const showYearlyChart = yearlyData.length >= 2
+    const showYearlyChart = yearlyData.length >= 1
 
     // Custom bar click handler for director drill-down
     const handleDirectorBarClick = (data: any) => {
-        if (data && data.activePayload && data.activePayload[0]) {
+        if (data && data.directorFull) setSelectedDirector(data.directorFull)
+        else if (data && data.activePayload && data.activePayload[0]) {
             const d = data.activePayload[0].payload
             if (d.directorFull) setSelectedDirector(d.directorFull)
         }
@@ -256,30 +257,29 @@ export default function EstadisticasPage() {
 
     return (
         <>
-            <div className="page-header">
-                <h2>Estadísticas</h2>
-                <p>Análisis detallado de tu rendimiento como {genero}</p>
+            <div className="page-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '8px' }}>
+                <h2 style={{ margin: 0 }}>Estadísticas</h2>
+                <p style={{ margin: 0 }}>Análisis detallado de tu rendimiento como {genero}</p>
             </div>
 
             <div className="page-body">
                 {/* Period filter */}
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
-                    {(Object.entries(periodLabel) as [PeriodKey, string][]).map(([key, label]) => (
-                        <button
-                            key={key}
-                            onClick={() => setPeriod(key)}
-                            style={{
-                                padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600,
-                                border: `1px solid ${period === key ? 'var(--accent)' : 'var(--border)'}`,
-                                background: period === key ? 'rgba(124,106,247,0.15)' : 'transparent',
-                                color: period === key ? 'var(--accent-light)' : 'var(--text-secondary)',
-                                cursor: 'pointer', transition: 'all 0.15s',
-                                fontFamily: 'inherit',
-                            }}
-                        >
-                            {label}
-                        </button>
-                    ))}
+                <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
+                    <select
+                        value={period}
+                        onChange={(e) => setPeriod(e.target.value as PeriodKey)}
+                        className="form-input"
+                        style={{
+                            width: 'auto', padding: '8px 36px 8px 16px', borderRadius: '12px',
+                            fontSize: '13px', fontWeight: 600, background: 'var(--bg-card)',
+                            border: '1px solid var(--border)', color: 'var(--text-primary)',
+                            cursor: 'pointer', appearance: 'auto'
+                        }}
+                    >
+                        {(Object.entries(periodLabel) as [PeriodKey, string][]).map(([key, label]) => (
+                            <option key={key} value={key}>{label}</option>
+                        ))}
+                    </select>
                 </div>
 
                 {/* Funnel */}
@@ -432,11 +432,11 @@ export default function EstadisticasPage() {
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
                                 <XAxis dataKey="director" axisLine={false} tickLine={false} tick={{ fill: '#8888aa', fontSize: 10 }} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8888aa', fontSize: 11 }} allowDecimals={false} />
-                                <Tooltip contentStyle={customTooltipStyle} itemStyle={customItemStyle} />
+                                <Tooltip contentStyle={customTooltipStyle} itemStyle={customItemStyle} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
                                 <Legend wrapperStyle={{ fontSize: '11px', color: '#8888aa' }} />
-                                <Bar dataKey="total" name="Total Castings" fill="#7c6af7" radius={[3, 3, 0, 0]} />
-                                <Bar dataKey="opcionados" name="Opcionados" fill="#f97316" radius={[3, 3, 0, 0]} />
-                                <Bar dataKey="trabajos" name="Trabajos" fill="#34d399" radius={[3, 3, 0, 0]} />
+                                <Bar dataKey="total" name="Total Castings" fill="#7c6af7" radius={[3, 3, 0, 0]} onClick={handleDirectorBarClick} />
+                                <Bar dataKey="opcionados" name="Opcionados" fill="#f97316" radius={[3, 3, 0, 0]} onClick={handleDirectorBarClick} />
+                                <Bar dataKey="trabajos" name="Trabajos" fill="#34d399" radius={[3, 3, 0, 0]} onClick={handleDirectorBarClick} />
                             </BarChart>
                         </ResponsiveContainer>
                     )}

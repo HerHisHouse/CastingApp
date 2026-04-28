@@ -54,12 +54,12 @@ export default function ContactosPage() {
 
     return (
         <>
-            <div className="page-header">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div>
-                        <h2>Contactos</h2>
-                        <p>{data.length} contactos en tu red profesional</p>
-                    </div>
+            <div className="page-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '16px' }}>
+                <div>
+                    <h2 style={{ margin: 0 }}>Contactos</h2>
+                    <p style={{ margin: 0 }}>{data.length} contactos en tu red profesional</p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
                     <button className="btn btn-primary" onClick={openNew}>
                         <Plus size={14} /> Nuevo Contacto
                     </button>

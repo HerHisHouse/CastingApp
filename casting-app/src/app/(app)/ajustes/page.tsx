@@ -72,13 +72,11 @@ export default function AjustesPage() {
 
     return (
         <>
-            <div className="page-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Settings size={20} color="var(--accent-light)" />
-                    <div>
-                        <h2>Ajustes</h2>
-                        <p>Gestiona tu cuenta y perfil</p>
-                    </div>
+            <div className="page-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '8px' }}>
+                <Settings size={28} color="var(--accent-light)" />
+                <div>
+                    <h2 style={{ margin: 0 }}>Ajustes</h2>
+                    <p style={{ margin: 0 }}>Gestiona tu cuenta y perfil</p>
                 </div>
             </div>
 

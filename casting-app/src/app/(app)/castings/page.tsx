@@ -436,16 +436,14 @@ export default function CastingsPage() {
 
     return (
         <>
-            <div className="page-header">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div>
-                        <h2>Castings</h2>
-                        <p>{data.length} castings registrados</p>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        <button className="btn btn-secondary" onClick={exportCSV}><Download size={14} /> Exportar CSV</button>
-                        <button className="btn btn-primary" onClick={openNew}><Plus size={14} /> Nuevo Casting</button>
-                    </div>
+            <div className="page-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '16px' }}>
+                <div>
+                    <h2 style={{ margin: 0 }}>Castings</h2>
+                    <p style={{ margin: 0 }}>{data.length} castings registrados</p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <button className="btn btn-secondary" onClick={exportCSV}><Download size={14} /> Exportar CSV</button>
+                    <button className="btn btn-primary" onClick={openNew}><Plus size={14} /> Nuevo Casting</button>
                 </div>
             </div>
 
