@@ -21,7 +21,7 @@ const customTooltipStyle = {
 }
 const customItemStyle = { color: 'var(--text-primary)', fontSize: '12px' }
 
-type PeriodKey = '3m' | '6m' | '1y' | 'all'
+type PeriodKey = '1m' | '3m' | '6m' | '1y' | 'all'
 
 function RatioCard({ label, value, sub, color }: { label: string, value: string, sub: string, color: string }) {
     const pct = parseFloat(value) || 0
@@ -129,13 +129,13 @@ export default function EstadisticasPage() {
     const filteredCastings = useMemo(() => {
         if (period === 'all') return castings
         const now = new Date()
-        const months = period === '3m' ? 3 : period === '6m' ? 6 : 12
+        const months = period === '1m' ? 1 : period === '3m' ? 3 : period === '6m' ? 6 : 12
         const cutoff = new Date(now.getFullYear(), now.getMonth() - months, 1)
         return castings.filter(c => new Date(c.fecha_casting) >= cutoff)
     }, [castings, period])
 
     const periodLabel: Record<PeriodKey, string> = {
-        '3m': 'Últimos 3 meses', '6m': 'Últimos 6 meses', '1y': 'Este año', 'all': 'Todo el histórico'
+        '1m': 'Último mes', '3m': 'Últimos 3 meses', '6m': 'Últimos 6 meses', '1y': 'Este año', 'all': 'Todo el histórico'
     }
 
     // Funnel
@@ -202,10 +202,10 @@ export default function EstadisticasPage() {
             .sort((a, b) => b.total - a.total).slice(0, 8)
     }, [filteredCastings])
 
-    // Evolución por mes (últimos 12 meses)
+    // Evolución por mes (últimos meses según filtro)
     const byMonth = useMemo(() => {
         const now = new Date()
-        const numMonths = period === '3m' ? 3 : period === '6m' ? 6 : 12
+        const numMonths = period === '1m' ? 1 : period === '3m' ? 3 : period === '6m' ? 6 : 12
         const months = []
         for (let i = numMonths - 1; i >= 0; i--) {
             const d = new Date(now.getFullYear(), now.getMonth() - i, 1)

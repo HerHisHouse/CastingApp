@@ -277,15 +277,19 @@ function FinanzaMobileCard({
                     <h2 style={{ margin: 0 }}>Finanzas</h2>
                     <p style={{ margin: 0 }}>Gestión de ingresos y pagos</p>
                 </div>
-                <div style={{ display: 'flex', gap: '8px', position: 'relative', flexWrap: 'wrap', justifyContent: 'center' }}>
-                        <button className="btn btn-secondary" onClick={toggleAmounts}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '320px', margin: '0 auto' }}>
+                    <button className="btn btn-primary" onClick={openNew} style={{ width: '100%', justifyContent: 'center' }}>
+                        <Plus size={14} /> Nuevo Ingreso
+                    </button>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <button className="btn btn-secondary" onClick={toggleAmounts} style={{ width: '100%', justifyContent: 'center' }}>
                             {showAmounts ? <EyeOff size={14} /> : <Eye size={14} />}
-                            <span className="desktop-only">{showAmounts ? 'Ocultar' : 'Mostrar'}</span>
+                            <span>{showAmounts ? 'Ocultar' : 'Mostrar'}</span>
                         </button>
                         <div style={{ position: 'relative' }}>
-                            <button className="btn btn-secondary" onClick={() => setShowExportMenu(v => !v)}>
+                            <button className="btn btn-secondary" onClick={() => setShowExportMenu(v => !v)} style={{ width: '100%', justifyContent: 'center' }}>
                                 <Download size={14} />
-                                <span className="desktop-only">Exportar</span>
+                                <span>Exportar</span>
                                 <ChevronDown size={12} />
                             </button>
                             {showExportMenu && (
@@ -315,10 +319,8 @@ function FinanzaMobileCard({
                                 </div>
                             )}
                         </div>
-                        <button className="btn btn-primary" onClick={openNew}>
-                            <Plus size={14} /> Nuevo Ingreso
-                        </button>
                     </div>
+                </div>
             </div>
 
             <div className="page-body">

@@ -442,8 +442,8 @@ export default function CastingsPage() {
                     <p style={{ margin: 0 }}>{data.length} castings registrados</p>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                    <button className="btn btn-secondary" onClick={exportCSV}><Download size={14} /> Exportar CSV</button>
                     <button className="btn btn-primary" onClick={openNew}><Plus size={14} /> Nuevo Casting</button>
+                    <button className="btn btn-secondary" onClick={exportCSV}><Download size={14} /> Exportar CSV</button>
                 </div>
             </div>
 
