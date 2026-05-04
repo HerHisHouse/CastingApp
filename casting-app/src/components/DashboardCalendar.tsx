@@ -355,7 +355,6 @@ export default function DashboardCalendar() {
             {/* ── Modal de Evento Manual ── */}
             {manualModalOpen && user && (
                 <ManualEventModal 
-                    userId={user.id}
                     onClose={() => setManualModalOpen(false)}
                 />
             )}

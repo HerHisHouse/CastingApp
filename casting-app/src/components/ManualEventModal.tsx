@@ -19,7 +19,7 @@ const COLORS = [
     { label: 'Importante (Rojo)', hex: '#ef4444' },
 ]
 
-export default function ManualEventModal({ userId, onClose }: Props) {
+export default function ManualEventModal({ onClose }: Omit<Props, 'userId'>) {
     const { create } = useCalendarEvents()
     const [loading, setLoading] = useState(false)
     const [form, setForm] = useState({
@@ -35,7 +35,6 @@ export default function ManualEventModal({ userId, onClose }: Props) {
         setLoading(true)
         try {
             await create({
-                user_id: userId,
                 title: form.title,
                 event_type: 'shooting_day', // Default type, we use custom_color + is_manual mostly
                 event_date_start: form.event_date_start,
