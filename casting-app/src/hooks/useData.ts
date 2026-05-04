@@ -16,15 +16,17 @@ export function useCastings() {
     const autoDiscardedIds = useRef<Set<string>>(new Set())
 
     const fetch = useCallback(async () => {
+        if (!user) return
         setLoading(true)
         const { data: rows, error: err } = await supabase
             .from('castings')
             .select('*')
+            .eq('user_id', user.id)
             .order('fecha_casting', { ascending: false })
         if (err) setError(err.message)
         else setData(rows || [])
         setLoading(false)
-    }, [])
+    }, [user])
 
     useEffect(() => { fetch() }, [fetch])
 
@@ -62,8 +64,9 @@ export function useCastings() {
     }, [data, loading, fetch])
     // Note: autoDiscardedIds.current prevents re-running for same IDs
 
-    const create = async (values: Omit<Casting, 'id' | 'created_at'>) => {
-        const { data: newRows, error: err } = await supabase.from('castings').insert(values).select()
+    const create = async (values: Omit<Casting, 'id' | 'created_at' | 'user_id'>) => {
+        if (!user) return
+        const { data: newRows, error: err } = await supabase.from('castings').insert({ ...values, user_id: user.id }).select()
         if (err) throw err
         // Sync calendar events — no-op if table doesn't exist yet
         if (newRows && newRows[0] && user) {
@@ -102,20 +105,23 @@ export function useProyectos() {
     const { user } = useAuth()
 
     const fetch = useCallback(async () => {
+        if (!user) return
         setLoading(true)
         const { data: rows, error: err } = await supabase
             .from('proyectos')
             .select('*')
+            .eq('user_id', user.id)
             .order('created_at', { ascending: false })
         if (err) setError(err.message)
         else setData(rows || [])
         setLoading(false)
-    }, [])
+    }, [user])
 
     useEffect(() => { fetch() }, [fetch])
 
-    const create = async (values: Omit<Proyecto, 'id' | 'created_at'>) => {
-        const { data: newRows, error: err } = await supabase.from('proyectos').insert(values).select()
+    const create = async (values: Omit<Proyecto, 'id' | 'created_at' | 'user_id'>) => {
+        if (!user) return
+        const { data: newRows, error: err } = await supabase.from('proyectos').insert({ ...values, user_id: user.id }).select()
         if (err) throw err
         if (newRows && newRows[0] && user) {
             try { await syncProjectEvents(newRows[0] as Proyecto, user.id) } catch (e) { console.warn('Project calendar sync skipped:', e) }
@@ -151,20 +157,23 @@ export function useFinanzas() {
     const { user } = useAuth()
 
     const fetch = useCallback(async () => {
+        if (!user) return
         setLoading(true)
         const { data: rows, error: err } = await supabase
             .from('finanzas')
             .select('*')
+            .eq('user_id', user.id)
             .order('fecha_factura', { ascending: false })
         if (err) setError(err.message)
         else setData(rows || [])
         setLoading(false)
-    }, [])
+    }, [user])
 
     useEffect(() => { fetch() }, [fetch])
 
-    const create = async (values: Omit<Finanza, 'id' | 'created_at'>) => {
-        const { data: newRows, error: err } = await supabase.from('finanzas').insert(values).select()
+    const create = async (values: Omit<Finanza, 'id' | 'created_at' | 'user_id'>) => {
+        if (!user) return
+        const { data: newRows, error: err } = await supabase.from('finanzas').insert({ ...values, user_id: user.id }).select()
         if (err) throw err
         if (newRows && newRows[0] && user) {
             try { await syncFinanceEvents(newRows[0] as Finanza, user.id) } catch (e) { console.warn('Calendar sync skipped:', e) }
@@ -199,20 +208,23 @@ export function useContactos() {
     const { user } = useAuth()
 
     const fetch = useCallback(async () => {
+        if (!user) return
         setLoading(true)
         const { data: rows, error: err } = await supabase
             .from('contactos')
             .select('*')
+            .eq('user_id', user.id)
             .order('nombre', { ascending: true })
         if (err) setError(err.message)
         else setData(rows || [])
         setLoading(false)
-    }, [])
+    }, [user])
 
     useEffect(() => { fetch() }, [fetch])
 
-    const create = async (values: Omit<Contacto, 'id' | 'created_at'>) => {
-        const { error: err } = await supabase.from('contactos').insert(values)
+    const create = async (values: Omit<Contacto, 'id' | 'created_at' | 'user_id'>) => {
+        if (!user) return
+        const { error: err } = await supabase.from('contactos').insert({ ...values, user_id: user.id })
         if (err) throw err
         await fetch()
     }
@@ -237,13 +249,16 @@ export function useCalendarEvents() {
     const [data, setData] = useState<CalendarEvent[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const { user } = useAuth()
 
     const fetch = useCallback(async () => {
+        if (!user) return
         setLoading(true)
         try {
             const { data: rows, error: err } = await supabase
                 .from('calendar_events')
                 .select('*')
+                .eq('user_id', user.id)
                 .order('event_date_start', { ascending: true })
             // If table doesn't exist yet, err will be set but we handle gracefully
             if (err) {
@@ -258,12 +273,13 @@ export function useCalendarEvents() {
         } finally {
             setLoading(false)
         }
-    }, [])
+    }, [user])
 
     useEffect(() => { fetch() }, [fetch])
 
-    const create = async (values: Omit<CalendarEvent, 'id' | 'created_at'>) => {
-        const { error: err } = await supabase.from('calendar_events').insert(values)
+    const create = async (values: Omit<CalendarEvent, 'id' | 'created_at' | 'user_id'>) => {
+        if (!user) return
+        const { error: err } = await supabase.from('calendar_events').insert({ ...values, user_id: user.id })
         if (err) throw err
         await fetch()
     }

@@ -54,6 +54,7 @@ export interface RolEconomico {
 export interface Casting {
   id: string
   created_at: string
+  user_id: string
   proyecto: string
   personaje: string
   tipo_proyecto: TipoProyecto
@@ -123,6 +124,7 @@ export type RolActorPublicidad = 'ocp' | 'secundario' | 'fe'
 export interface Proyecto {
   id: string
   created_at: string
+  user_id: string
   casting_id: string | null
   proyecto: string
   personaje: string
@@ -177,6 +179,7 @@ export interface OtroImpuesto {
 export interface Finanza {
   id: string
   created_at: string
+  user_id: string
   proyecto_id: string | null
   proyecto_nombre: string
   tipo_ingreso: TipoIngreso
@@ -195,6 +198,7 @@ export interface Finanza {
 export interface Contacto {
   id: string
   created_at: string
+  user_id: string
   nombre: string
   tipo_contacto: TipoContacto
   empresa: string | null

@@ -5,7 +5,11 @@ export async function signUp(email: string, password: string, username: string) 
         email,
         password,
         options: {
-            data: { username },
+            data: { 
+                username,
+                full_name: username,
+                display_name: username
+            },
         },
     })
     if (error) throw error

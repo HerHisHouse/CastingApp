@@ -349,7 +349,7 @@ export default function CastingsPage() {
         })
     }, [data, search, estadoFilter, tipoFilter])
 
-    const handleSave = async (form: Omit<Casting, 'id' | 'created_at'>) => {
+    const handleSave = async (form: Omit<Casting, 'id' | 'created_at' | 'user_id'>) => {
         if (editing) await update(editing.id, form)
         else await create(form)
 
