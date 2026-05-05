@@ -347,6 +347,9 @@ export default function DashboardCalendar() {
 
             {/* ── Modal de Día ── */}
             {selectedDay && (
+                <DayEventsModal
+                    day={selectedDay}
+                    events={getEventsForDay(selectedDay)}
                     onClose={() => setSelectedDay(null)}
                     onRemove={remove}
                     onAdd={() => {
