@@ -283,6 +283,11 @@ export function useCalendarEvents() {
         if (err) throw err
         await fetch()
     }
+    const remove = async (id: string) => {
+        const { error: err } = await supabase.from('calendar_events').delete().eq('id', id)
+        if (err) throw err
+        await fetch()
+    }
 
     const update = async (id: string, values: Partial<Omit<CalendarEvent, 'id' | 'created_at' | 'user_id'>>) => {
         if (!user) return
