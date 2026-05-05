@@ -47,6 +47,7 @@ export default function DashboardCalendar() {
     const [showPicker, setShowPicker] = useState(false)
     const [pickerYear, setPickerYear] = useState(getYear(new Date()))
     const [manualModalOpen, setManualModalOpen] = useState(false)
+    const [manualModalDate, setManualModalDate] = useState<string | null>(null)
     const { user } = useAuth()
     const pickerRef = useRef<HTMLDivElement>(null)
 
@@ -259,7 +260,7 @@ export default function DashboardCalendar() {
                 </div>
 
             {/* ── Filtros (todos los tipos) ── */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', marginTop: '12px', flexWrap: 'wrap' }}>
                 {FILTER_GROUPS.map(g => (
                     <FilterChip
                         key={g.key}
@@ -350,13 +351,22 @@ export default function DashboardCalendar() {
                     events={getEventsForDay(selectedDay)}
                     onClose={() => setSelectedDay(null)}
                     onRemove={remove}
+                    onAdd={() => {
+                        setManualModalDate(format(selectedDay, 'yyyy-MM-dd'))
+                        setManualModalOpen(true)
+                        setSelectedDay(null)
+                    }}
                 />
             )}
 
             {/* ── Modal de Evento Manual ── */}
             {manualModalOpen && user && (
                 <ManualEventModal 
-                    onClose={() => setManualModalOpen(false)}
+                    onClose={() => {
+                        setManualModalOpen(false)
+                        setManualModalDate(null)
+                    }}
+                    initialDate={manualModalDate || undefined}
                 />
             )}
         </div>
@@ -385,7 +395,7 @@ function FilterChip({ active, onClick, color, label }: { active: boolean; onClic
 }
 
 // ── DayEventsModal ────────────────────────────────────────────────────────────
-function DayEventsModal({ day, events, onClose, onRemove }: { day: Date; events: CalendarEvent[]; onClose: () => void; onRemove: (id: string) => Promise<void> }) {
+function DayEventsModal({ day, events, onClose, onRemove, onAdd }: { day: Date; events: CalendarEvent[]; onClose: () => void; onRemove: (id: string) => Promise<void>; onAdd: () => void }) {
     const [deleting, setDeleting] = useState<string | null>(null)
 
     const handleDelete = async (id: string) => {
@@ -445,7 +455,18 @@ function DayEventsModal({ day, events, onClose, onRemove }: { day: Date; events:
                     {events.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '36px', color: 'var(--text-secondary)' }}>
                             <Info size={28} style={{ opacity: 0.2, marginBottom: '10px' }} />
-                            <p style={{ fontSize: '13px' }}>No hay eventos para este día</p>
+                            <p style={{ fontSize: '13px', marginBottom: '16px' }}>No hay eventos para este día</p>
+                            <button 
+                                onClick={onAdd}
+                                style={{
+                                    padding: '8px 16px', borderRadius: '8px', background: 'var(--accent)',
+                                    color: 'white', border: 'none', fontSize: '12px', fontWeight: 600,
+                                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+                                    margin: '0 auto'
+                                }}
+                            >
+                                <Plus size={14} /> Añadir evento
+                            </button>
                         </div>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

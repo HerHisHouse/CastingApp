@@ -7,6 +7,7 @@ import { EventType } from '@/lib/supabase'
 
 interface Props {
     onClose: () => void
+    initialDate?: string // Formato YYYY-MM-DD
 }
 
 const COLORS = [
@@ -20,12 +21,12 @@ const COLORS = [
     { label: 'ENSAYO', hex: '#ffffff', type: 'rehearsal' as EventType },
 ]
 
-export default function ManualEventModal({ onClose }: Props) {
+export default function ManualEventModal({ onClose, initialDate }: Props) {
     const { create } = useCalendarEvents()
     const [loading, setLoading] = useState(false)
     const [form, setForm] = useState({
         title: '',
-        event_date_start: new Date().toISOString().split('T')[0],
+        event_date_start: initialDate || new Date().toISOString().split('T')[0],
         event_time: '09:00',
         event_time_end: '10:00',
         is_all_day: false,
