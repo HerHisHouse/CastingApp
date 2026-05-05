@@ -2,12 +2,14 @@
 import { useState } from 'react'
 import Modal from './Modal'
 import { useCalendarEvents } from '@/hooks/useData'
-import { Plus, Clock, Type, Palette, Calendar } from 'lucide-react'
-import { EventType } from '@/lib/supabase'
+import { Plus, Clock, Type, Palette, Calendar, MapPin } from 'lucide-react'
+import { CalendarEvent, EventType } from '@/lib/supabase'
 
-interface Props {
     onClose: () => void
     initialDate?: string // Formato YYYY-MM-DD
+    eventToEdit?: CalendarEvent
+    onCreate: (values: any) => Promise<void>
+    onUpdate: (id: string, values: any) => Promise<void>
 }
 
 const COLORS = [
@@ -21,25 +23,25 @@ const COLORS = [
     { label: 'ENSAYO', hex: '#ffffff', type: 'rehearsal' as EventType },
 ]
 
-export default function ManualEventModal({ onClose, initialDate }: Props) {
-    const { create } = useCalendarEvents()
+export default function ManualEventModal({ onClose, initialDate, eventToEdit, onCreate, onUpdate }: Props) {
     const [loading, setLoading] = useState(false)
     const [form, setForm] = useState({
-        title: '',
-        event_date_start: initialDate || new Date().toISOString().split('T')[0],
-        event_time: '09:00',
-        event_time_end: '10:00',
-        is_all_day: false,
-        notes: '',
-        custom_color: '#f97316',
-        event_type: 'opcionado_ppm' as EventType
+        title: eventToEdit?.title || '',
+        event_date_start: eventToEdit?.event_date_start || initialDate || new Date().toISOString().split('T')[0],
+        event_time: eventToEdit?.event_time || '09:00',
+        event_time_end: eventToEdit?.event_time_end || '10:00',
+        is_all_day: eventToEdit?.is_all_day || false,
+        notes: eventToEdit?.notes || '',
+        location: eventToEdit?.location || '',
+        custom_color: eventToEdit?.custom_color || '#f97316',
+        event_type: eventToEdit?.event_type || 'opcionado_ppm' as EventType
     })
 
     const handleSave = async () => {
         if (!form.title) return alert('Ponle un título al evento')
         setLoading(true)
         try {
-            await create({
+            const payload = {
                 title: form.title,
                 event_type: form.event_type,
                 event_date_start: form.event_date_start,
@@ -48,16 +50,23 @@ export default function ManualEventModal({ onClose, initialDate }: Props) {
                 event_time_end: form.is_all_day ? null : form.event_time_end,
                 is_all_day: form.is_all_day,
                 notes: form.notes,
+                location: form.location,
                 is_manual: true,
                 custom_color: form.custom_color,
-                related_casting_id: null,
-                related_project_id: null,
-                related_finance_id: null
-            })
+                related_casting_id: eventToEdit?.related_casting_id || null,
+                related_project_id: eventToEdit?.related_project_id || null,
+                related_finance_id: eventToEdit?.related_finance_id || null
+            }
+
+            if (eventToEdit?.id) {
+                await onUpdate(eventToEdit.id, payload)
+            } else {
+                await onCreate(payload)
+            }
             onClose()
         } catch (err) {
             console.error(err)
-            alert('Error al crear el evento')
+            alert('Error al guardar el evento')
         } finally {
             setLoading(false)
         }
@@ -202,6 +211,20 @@ export default function ManualEventModal({ onClose, initialDate }: Props) {
                             </div>
                         ))}
                     </div>
+                </div>
+
+                {/* Ubicación */}
+                <div className="form-group">
+                    <label className="form-label">
+                        <MapPin size={12} style={{ marginRight: '6px' }} /> UBICACIÓN / LOCALIZACIÓN
+                    </label>
+                    <input 
+                        type="text" 
+                        className="form-input" 
+                        placeholder="Ej: Madrid, Estudio 1, Zoom..."
+                        value={form.location}
+                        onChange={e => setForm({ ...form, location: e.target.value })}
+                    />
                 </div>
 
                 {/* Notas */}

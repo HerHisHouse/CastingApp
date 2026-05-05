@@ -224,4 +224,5 @@ export interface CalendarEvent {
   is_all_day: boolean            // Nueva: Todo el día
   is_manual: boolean              // Indica si es creado a mano
   custom_color: string | null     // Color elegido por el usuario
+  location: string | null         // Nuevo: Ubicación/Localización
 }

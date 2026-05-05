@@ -8,7 +8,7 @@ import {
 import { es } from 'date-fns/locale'
 import {
     ChevronLeft, ChevronRight, X, Calendar as CalendarIcon,
-    Info, ExternalLink, ChevronDown, Trash2, Plus, Clock
+    Info, ExternalLink, ChevronDown, Trash2, Plus, Clock, Edit2, MapPin
 } from 'lucide-react'
 import { useCalendarEvents } from '@/hooks/useData'
 import { CalendarEvent, EventType } from '@/lib/supabase'
@@ -41,13 +41,14 @@ const FILTER_GROUPS: { key: string; label: string; color: string; types: EventTy
 
 // ─── Componente principal ────────────────────────────────────────────────────
 export default function DashboardCalendar() {
-    const { data: events, loading, remove } = useCalendarEvents()
+    const { data: events, loading, remove, create, update } = useCalendarEvents()
     const [currentMonth, setCurrentMonth] = useState(new Date())
     const [selectedDay, setSelectedDay] = useState<Date | null>(null)
     const [showPicker, setShowPicker] = useState(false)
     const [pickerYear, setPickerYear] = useState(getYear(new Date()))
     const [manualModalOpen, setManualModalOpen] = useState(false)
     const [manualModalDate, setManualModalDate] = useState<string | null>(null)
+    const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
     const { user } = useAuth()
     const pickerRef = useRef<HTMLDivElement>(null)
 
@@ -346,13 +347,15 @@ export default function DashboardCalendar() {
 
             {/* ── Modal de Día ── */}
             {selectedDay && (
-                <DayEventsModal
-                    day={selectedDay}
-                    events={getEventsForDay(selectedDay)}
                     onClose={() => setSelectedDay(null)}
                     onRemove={remove}
                     onAdd={() => {
                         setManualModalDate(format(selectedDay, 'yyyy-MM-dd'))
+                        setManualModalOpen(true)
+                        setSelectedDay(null)
+                    }}
+                    onEdit={(ev) => {
+                        setEditingEvent(ev)
                         setManualModalOpen(true)
                         setSelectedDay(null)
                     }}
@@ -365,8 +368,12 @@ export default function DashboardCalendar() {
                     onClose={() => {
                         setManualModalOpen(false)
                         setManualModalDate(null)
+                        setEditingEvent(null)
                     }}
                     initialDate={manualModalDate || undefined}
+                    eventToEdit={editingEvent || undefined}
+                    onCreate={create}
+                    onUpdate={update}
                 />
             )}
         </div>
@@ -395,7 +402,7 @@ function FilterChip({ active, onClick, color, label }: { active: boolean; onClic
 }
 
 // ── DayEventsModal ────────────────────────────────────────────────────────────
-function DayEventsModal({ day, events, onClose, onRemove, onAdd }: { day: Date; events: CalendarEvent[]; onClose: () => void; onRemove: (id: string) => Promise<void>; onAdd: () => void }) {
+function DayEventsModal({ day, events, onClose, onRemove, onAdd, onEdit }: { day: Date; events: CalendarEvent[]; onClose: () => void; onRemove: (id: string) => Promise<void>; onAdd: () => void; onEdit: (ev: CalendarEvent) => void }) {
     const [deleting, setDeleting] = useState<string | null>(null)
 
     const handleDelete = async (id: string) => {
@@ -486,20 +493,35 @@ function DayEventsModal({ day, events, onClose, onRemove, onAdd }: { day: Date; 
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
                                             <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px' }}>{e.title}</div>
-                                            <button 
-                                                onClick={() => handleDelete(e.id)}
-                                                disabled={!!deleting}
-                                                style={{ 
-                                                    background: 'none', border: 'none', padding: '4px', 
-                                                    cursor: 'pointer', color: 'var(--danger)', opacity: 0.6,
-                                                    transition: 'opacity 0.2s'
-                                                }}
-                                                onMouseEnter={el => el.currentTarget.style.opacity = '1'}
-                                                onMouseLeave={el => el.currentTarget.style.opacity = '0.6'}
-                                                title="Eliminar evento"
-                                            >
-                                                <Trash2 size={13} />
-                                            </button>
+                                            <div style={{ display: 'flex', gap: '4px' }}>
+                                                <button 
+                                                    onClick={() => onEdit(e)}
+                                                    style={{ 
+                                                        background: 'none', border: 'none', padding: '4px', 
+                                                        cursor: 'pointer', color: 'var(--accent-light)', opacity: 0.6,
+                                                        transition: 'opacity 0.2s'
+                                                    }}
+                                                    onMouseEnter={el => el.currentTarget.style.opacity = '1'}
+                                                    onMouseLeave={el => el.currentTarget.style.opacity = '0.6'}
+                                                    title="Editar evento"
+                                                >
+                                                    <Edit2 size={13} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleDelete(e.id)}
+                                                    disabled={!!deleting}
+                                                    style={{ 
+                                                        background: 'none', border: 'none', padding: '4px', 
+                                                        cursor: 'pointer', color: 'var(--danger)', opacity: 0.6,
+                                                        transition: 'opacity 0.2s'
+                                                    }}
+                                                    onMouseEnter={el => el.currentTarget.style.opacity = '1'}
+                                                    onMouseLeave={el => el.currentTarget.style.opacity = '0.6'}
+                                                    title="Eliminar evento"
+                                                >
+                                                    <Trash2 size={13} />
+                                                </button>
+                                            </div>
                                         </div>
                                         {/* Hora / Todo el día */}
                                         {!e.is_all_day && e.event_time && (
@@ -511,6 +533,12 @@ function DayEventsModal({ day, events, onClose, onRemove, onAdd }: { day: Date; 
                                         {e.is_all_day && (
                                             <div style={{ fontSize: '10px', color: 'var(--accent-light)', fontWeight: 600, marginBottom: '4px' }}>
                                                 Todo el día
+                                            </div>
+                                        )}
+                                        {e.location && (
+                                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <MapPin size={10} color="var(--accent-light)" />
+                                                {e.location}
                                             </div>
                                         )}
                                         {e.notes && <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>{e.notes}</div>}
