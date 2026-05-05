@@ -257,7 +257,6 @@ export default function DashboardCalendar() {
                         </div>
                     )}
                 </div>
-            </div>
 
             {/* ── Filtros (todos los tipos) ── */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
