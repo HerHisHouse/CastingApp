@@ -5,6 +5,7 @@ import { useCalendarEvents } from '@/hooks/useData'
 import { Plus, Clock, Type, Palette, Calendar, MapPin } from 'lucide-react'
 import { CalendarEvent, EventType } from '@/lib/supabase'
 
+interface Props {
     onClose: () => void
     initialDate?: string // Formato YYYY-MM-DD
     eventToEdit?: CalendarEvent
