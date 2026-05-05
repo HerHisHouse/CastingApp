@@ -24,6 +24,7 @@ const EVENT_CONFIG: Record<EventType, { color: string; emoji: string; label: str
     shooting_day: { color: '#22c55e', emoji: '🟢', label: 'Trabajo' },
     travel_day: { color: '#8b5cf6', emoji: '✈️', label: 'Viaje' },
     finance_due: { color: '#d946ef', emoji: '🟣', label: 'Límite de cobro' },
+    rehearsal: { color: '#ffffff', emoji: '⚪', label: 'Ensayo' },
 }
 
 // Grupos de filtros — cada grupo incluye los event_types que cubre
@@ -35,6 +36,7 @@ const FILTER_GROUPS: { key: string; label: string; color: string; types: EventTy
     { key: 'rodajes', label: 'Trabajo', color: '#22c55e', types: ['shooting_day'] },
     { key: 'travel', label: 'Viaje', color: '#8b5cf6', types: ['travel_day'] },
     { key: 'finanzas', label: 'Finanzas', color: '#d946ef', types: ['finance_due'] },
+    { key: 'ensayos', label: 'Ensayos', color: '#ffffff', types: ['rehearsal'] },
 ]
 
 // ─── Componente principal ────────────────────────────────────────────────────
@@ -479,6 +481,18 @@ function DayEventsModal({ day, events, onClose, onRemove }: { day: Date; events:
                                                 <Trash2 size={13} />
                                             </button>
                                         </div>
+                                        {/* Hora / Todo el día */}
+                                        {!e.is_all_day && e.event_time && (
+                                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <Clock size={10} />
+                                                {e.event_time} {e.event_time_end ? ` - ${e.event_time_end}` : ''}
+                                            </div>
+                                        )}
+                                        {e.is_all_day && (
+                                            <div style={{ fontSize: '10px', color: 'var(--accent-light)', fontWeight: 600, marginBottom: '4px' }}>
+                                                Todo el día
+                                            </div>
+                                        )}
                                         {e.notes && <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>{e.notes}</div>}
 
                                         <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>

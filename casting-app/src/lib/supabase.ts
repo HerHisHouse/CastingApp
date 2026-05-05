@@ -44,7 +44,7 @@ export type FuenteCasting = 'representante' | 'director_casting' | 'autocasting'
 export type TipoIngreso = 'nomina' | 'derechos_imagen' | 'buyout' | 'royalties' | 'callback'
 export type EstadoPago = 'pendiente' | 'pagado' | 'parcial'
 export type TipoContacto = 'director_casting' | 'representante' | 'productor' | 'director'
-export type EventType = 'casting_deadline' | 'opcionado_ppm' | 'callback' | 'wardrobe_fitting' | 'shooting_day' | 'travel_day' | 'finance_due'
+export type EventType = 'casting_deadline' | 'opcionado_ppm' | 'callback' | 'wardrobe_fitting' | 'shooting_day' | 'travel_day' | 'finance_due' | 'rehearsal'
 
 export interface RolEconomico {
   tarifa_bruta: number | null
@@ -219,7 +219,9 @@ export interface CalendarEvent {
   related_project_id: string | null  // Nuevo: Referencia a proyectos
   related_finance_id: string | null
   notes: string | null
-  event_time: string | null       // Nueva: Hora del evento
-  is_manual: boolean              // Nueva: Indica si es creado a mano
-  custom_color: string | null     // Nueva: Color elegido por el usuario
+  event_time: string | null       // Hora de inicio
+  event_time_end: string | null   // Nueva: Hora de fin
+  is_all_day: boolean            // Nueva: Todo el día
+  is_manual: boolean              // Indica si es creado a mano
+  custom_color: string | null     // Color elegido por el usuario
 }
