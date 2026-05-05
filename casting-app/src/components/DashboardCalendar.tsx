@@ -8,7 +8,7 @@ import {
 import { es } from 'date-fns/locale'
 import {
     ChevronLeft, ChevronRight, X, Calendar as CalendarIcon,
-    Info, ExternalLink, ChevronDown, Trash2, Plus
+    Info, ExternalLink, ChevronDown, Trash2, Plus, Clock
 } from 'lucide-react'
 import { useCalendarEvents } from '@/hooks/useData'
 import { CalendarEvent, EventType } from '@/lib/supabase'
@@ -125,9 +125,24 @@ export default function DashboardCalendar() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <CalendarIcon size={18} color="var(--accent)" />
-                    <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Calendario de Trabajo</h3>
+                    <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Calendario</h3>
                     {loading && <span style={{ fontSize: '11px', color: 'var(--text-secondary)', opacity: 0.7 }}>Cargando…</span>}
                 </div>
+
+                <button
+                    onClick={() => setManualModalOpen(true)}
+                    style={{
+                        height: 32, padding: '0 12px', borderRadius: '8px',
+                        border: '1px solid var(--accent)', background: 'var(--accent)',
+                        fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                        color: 'white', transition: 'all 0.15s ease',
+                        display: 'flex', alignItems: 'center', gap: '6px'
+                    }}
+                >
+                    <Plus size={14} />
+                    Evento
+                </button>
+            </div>
 
                 {/* Nav controles */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', position: 'relative' }} ref={pickerRef}>
@@ -191,21 +206,6 @@ export default function DashboardCalendar() {
                         onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
                     >
                         Hoy
-                    </button>
-                    
-                    {/* Añadir Evento */}
-                    <button
-                        onClick={() => setManualModalOpen(true)}
-                        style={{
-                            height: 32, padding: '0 12px', borderRadius: '8px',
-                            border: '1px solid var(--accent)', background: 'var(--accent)',
-                            fontSize: '11px', fontWeight: 600, cursor: 'pointer',
-                            color: 'white', transition: 'all 0.15s ease',
-                            display: 'flex', alignItems: 'center', gap: '6px'
-                        }}
-                    >
-                        <Plus size={14} />
-                        Evento
                     </button>
 
                     {/* ── Picker popup ── */}
