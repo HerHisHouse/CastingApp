@@ -32,9 +32,25 @@ export type Database = {
         Row: CalendarEvent
         Insert: Omit<CalendarEvent, 'id' | 'created_at'>
         Update: Partial<Omit<CalendarEvent, 'id' | 'created_at'>>
+      },
+      user_profiles: {
+        Row: UserProfile
+        Insert: Omit<UserProfile, 'id' | 'created_at'>
+        Update: Partial<Omit<UserProfile, 'id' | 'created_at'>>
       }
     }
   }
+}
+
+export interface UserProfile {
+  id: string
+  has_completed_onboarding: boolean
+  onboarding_step: number
+  artistic_name: string | null
+  artist_type: string | null
+  default_agency: string | null
+  default_commission_percentage: number | null
+  created_at: string
 }
 
 export type TipoProyecto = 'serie' | 'cine' | 'publicidad' | 'teatro' | 'doblaje' | 'tv' | 'evento'

@@ -6,15 +6,20 @@ import Sidebar from '@/components/Sidebar'
 import { Loader2 } from 'lucide-react'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-    const { user, loading } = useAuth()
+    const { user, loading, userProfile } = useAuth()
     const router = useRouter()
 
     useEffect(() => {
-        if (!loading && !user) {
-            router.replace('/login')
+        if (!loading) {
+            if (!user) {
+                router.replace('/login')
+            } else if (userProfile && !userProfile.has_completed_onboarding) {
+                router.replace('/onboarding')
+            }
         }
-    }, [user, loading, router])
+    }, [user, loading, userProfile, router])
 
+    // ... loading UI is now handled in AuthContext ...
     if (loading) return (
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)' }}>
             <Loader2 size={28} color="var(--accent-light)" className="spin" />

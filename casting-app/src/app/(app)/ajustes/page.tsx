@@ -205,8 +205,32 @@ export default function AjustesPage() {
                         <NotificacionesSettings />
                     </div>
 
-                    {/* ─── CERRAR SESIÓN ──────────────────────────────── */}
-                    <div style={{ paddingTop: '4px' }}>
+                    {/* ─── OTROS / PELIGRO ──────────────────────────────── */}
+                    <div style={{ paddingTop: '4px', display: 'flex', gap: '12px' }}>
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                if (user) {
+                                    const { supabase } = await import('@/lib/supabase');
+                                    await supabase.from('user_profiles').update({
+                                        has_completed_onboarding: false,
+                                        onboarding_step: 1
+                                    }).eq('id', user.id);
+                                    await refresh();
+                                    router.replace('/onboarding');
+                                }
+                            }}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '8px',
+                                background: 'none', border: '1px solid var(--border)',
+                                color: 'var(--text-secondary)', padding: '10px 20px', borderRadius: '8px',
+                                cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600, fontSize: '13px',
+                                transition: 'all 0.15s',
+                            }}
+                        >
+                            🔄 Rehacer tutorial
+                        </button>
+
                         <button
                             type="button"
                             onClick={handleSignOut}
