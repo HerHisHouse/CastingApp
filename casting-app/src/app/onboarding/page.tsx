@@ -45,6 +45,7 @@ export default function OnboardingPage() {
     }, [userProfile, router])
 
     const saveStep = async (nextStep: number, isComplete: boolean = false) => {
+        console.log(`Guardando paso: ${nextStep}, Completado: ${isComplete}`);
         if (!user) return
         
         const updates: any = {
@@ -59,13 +60,20 @@ export default function OnboardingPage() {
             updates.default_commission_percentage = defaultCommission ? parseFloat(defaultCommission) : null
         }
 
-        await supabase.from('user_profiles').update(updates).eq('id', user.id)
-        await refresh()
-        
-        if (isComplete) {
-            router.replace('/')
-        } else {
-            setStep(nextStep)
+        // Optimistic local update to prevent hanging
+        if (!isComplete) {
+            setStep(nextStep);
+            window.scrollTo(0, 0);
+        }
+
+        try {
+            await supabase.from('user_profiles').update(updates).eq('id', user.id)
+            if (isComplete) {
+                await refresh()
+                router.replace('/')
+            }
+        } catch (error) {
+            console.error("Error al guardar en Supabase:", error)
         }
     }
 
@@ -100,13 +108,13 @@ export default function OnboardingPage() {
                         <div key={s} style={{ display: 'flex', alignItems: 'center' }}>
                             <div style={{
                                 width: '10px', height: '10px', borderRadius: '50%',
-                                background: s <= step ? 'var(--accent)' : 'rgba(255,255,255,0.1)',
+                                background: s <= step ? '#7c6af7' : '#3d3d55',
                                 transition: 'all 0.3s'
                             }} />
                             {s < 5 && (
                                 <div style={{
                                     width: '30px', height: '2px', marginLeft: '12px',
-                                    background: s < step ? 'var(--accent)' : 'rgba(255,255,255,0.05)',
+                                    background: s < step ? '#7c6af7' : '#3d3d55',
                                     transition: 'all 0.3s'
                                 }} />
                             )}
@@ -119,12 +127,16 @@ export default function OnboardingPage() {
             {step === 1 && (
                 <div style={{ textAlign: 'center', animation: 'slideUp 0.4s ease-out' }}>
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-                        <div style={{ width: '64px', height: '64px', background: 'var(--accent)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Clapperboard size={32} color="white" />
-                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="80" height="80">
+                            <rect width="40" height="40" rx="9" fill="#12101e"/>
+                            <polygon points="10,8 10,32 30,20" fill="#7c6af7" opacity="0.18"/>
+                            <polygon points="10,8 10,20 20,14" fill="#7c6af7"/>
+                            <polygon points="10,20 10,32 20,26" fill="#a78bfa"/>
+                            <polygon points="20,14 20,26 30,20" fill="#534AB7"/>
+                        </svg>
                     </div>
-                    <h1 style={{ fontSize: '32px', marginBottom: '12px', letterSpacing: '-0.5px' }}>Bienvenido/a a Caché</h1>
-                    <p style={{ fontSize: '18px', color: 'var(--text-secondary)', marginBottom: '48px' }}>Tu mánager digital de carrera artística</p>
+                    <h1 style={{ fontSize: '32px', marginBottom: '12px', letterSpacing: '-0.5px' }}>Te doy la bienvenida a Caché</h1>
+                    <p style={{ fontSize: '18px', color: 'var(--text-secondary)', marginBottom: '48px' }}>Gestiona tu carrera artística</p>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', marginBottom: '48px' }}>
                         
@@ -165,7 +177,7 @@ export default function OnboardingPage() {
                     </div>
 
                     <button className="btn btn-primary" style={{ width: '100%', maxWidth: '400px', justifyContent: 'center', padding: '14px', fontSize: '16px' }} onClick={() => saveStep(2)}>
-                        Comenzar <ChevronRight size={18} />
+                        Siguiente <ChevronRight size={18} />
                     </button>
                 </div>
             )}
@@ -219,7 +231,7 @@ export default function OnboardingPage() {
                             <ChevronLeft size={16} /> Atrás
                         </button>
                         <button className="btn btn-primary" disabled={!artisticName} onClick={() => saveStep(3)}>
-                            Continuar <ChevronRight size={16} />
+                            Siguiente <ChevronRight size={16} />
                         </button>
                     </div>
                 </div>
@@ -316,7 +328,7 @@ export default function OnboardingPage() {
                             <ChevronLeft size={16} /> Atrás
                         </button>
                         <button className="btn btn-primary" onClick={() => saveStep(4)}>
-                            Continuar <ChevronRight size={16} />
+                            Siguiente <ChevronRight size={16} />
                         </button>
                     </div>
                 </div>
@@ -398,7 +410,7 @@ export default function OnboardingPage() {
                             <ChevronLeft size={16} /> Atrás
                         </button>
                         <button className="btn btn-primary" onClick={() => saveStep(5)}>
-                            Continuar <ChevronRight size={16} />
+                            Siguiente <ChevronRight size={16} />
                         </button>
                     </div>
                 </div>
@@ -441,12 +453,11 @@ export default function OnboardingPage() {
                     </div>
 
                     <button 
-                        onClick={handleSkip} 
-                        style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '14px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '8px 16px', borderRadius: '8px' }}
-                        onMouseOver={e => e.currentTarget.style.color = 'white'}
-                        onMouseOut={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+                        onClick={() => saveStep(6, true)} 
+                        className="btn btn-primary"
+                        style={{ width: '100%', maxWidth: '400px', justifyContent: 'center', padding: '14px', fontSize: '16px', marginTop: '16px' }}
                     >
-                        Omitir, explorar la app vacía <ChevronRight size={14} />
+                        Comenzar
                     </button>
                 </div>
             )}
