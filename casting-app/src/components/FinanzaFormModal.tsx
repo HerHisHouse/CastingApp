@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import Modal from '@/components/Modal'
-import { Finanza, TipoIngreso, EstadoPago, OtroImpuesto } from '@/lib/supabase'
+import { Finanza, TipoIngreso, EstadoPago, OtroImpuesto, PagoExtra } from '@/lib/supabase'
 import { Save, Info, Plus, Trash2 } from 'lucide-react'
 
 type FinanzaForm = Omit<Finanza, 'id' | 'created_at' | 'user_id'>
@@ -28,6 +28,7 @@ const defaultForm: FinanzaForm = {
     comision_representante: null,
     impuestos_estimados: null,
     notas: null,
+    pagos_extra: [],
 }
 
 const tiposIngreso: [TipoIngreso, string][] = [
@@ -77,34 +78,45 @@ export default function FinanzaFormModal({ open, onClose, onSave, initial }: Pro
     }
 
     // Cálculos en tiempo real
-    const bruto = form.cantidad ?? 0
+    const baseCantidad = form.cantidad ?? 0
     const eco = useMemo(() => {
+        let totalExtras = 0
+        if (form.pagos_extra) {
+            form.pagos_extra.forEach(p => { totalExtras += (p.cantidad || 0) })
+        }
+
+        const brutoTotal = baseCantidad + totalExtras
+        
         const comisionPct = form.comision_representante ?? 0
         const impuestosPct = form.impuestos_estimados ?? 0
-        const comisionImporte = bruto * (comisionPct / 100)
-        const impuestosImporte = bruto * (impuestosPct / 100)
+        
+        // La comisión suele ser sobre el bruto base, no sobre dietas/viajes.
+        const comisionImporte = baseCantidad * (comisionPct / 100)
+        // El IRPF suele ser sobre el bruto total.
+        const impuestosImporte = brutoTotal * (impuestosPct / 100)
         
         let otrosImporte = 0
         if (form.otros_impuestos) {
             form.otros_impuestos.forEach(imp => {
                 if (imp.tipo === 'porcentaje') {
-                    otrosImporte += bruto * (imp.valor / 100)
+                    otrosImporte += brutoTotal * (imp.valor / 100)
                 } else {
                     otrosImporte += (imp.valor || 0)
                 }
             })
         }
         
-        const netoCalculado = bruto - comisionImporte - impuestosImporte - otrosImporte
+        const netoCalculado = brutoTotal - comisionImporte - impuestosImporte - otrosImporte
         const neto = form.importe_neto || netoCalculado
         
-        return { comisionImporte, impuestosImporte, otrosImporte, netoCalculado, neto }
-    }, [bruto, form.comision_representante, form.impuestos_estimados, form.otros_impuestos, form.importe_neto])
+        return { totalExtras, brutoTotal, comisionImporte, impuestosImporte, otrosImporte, netoCalculado, neto }
+    }, [baseCantidad, form.comision_representante, form.impuestos_estimados, form.otros_impuestos, form.importe_neto, form.pagos_extra])
 
-    const hasCalc = bruto > 0 && (
+    const hasCalc = (baseCantidad > 0 || eco.totalExtras > 0) && (
         (form.comision_representante ?? 0) > 0 || 
         (form.impuestos_estimados ?? 0) > 0 || 
         (form.otros_impuestos?.length ?? 0) > 0 ||
+        (form.pagos_extra?.length ?? 0) > 0 ||
         form.importe_neto != null
     )
 
@@ -122,6 +134,22 @@ export default function FinanzaFormModal({ open, onClose, onSave, initial }: Pro
         const nuevos = [...(form.otros_impuestos || [])]
         nuevos[index] = { ...nuevos[index], [field]: value }
         set('otros_impuestos', nuevos)
+    }
+
+    const addPagoExtra = () => {
+        const nuevos = [...(form.pagos_extra || []), { concepto: '', cantidad: 0 }]
+        set('pagos_extra', nuevos)
+    }
+
+    const removePagoExtra = (index: number) => {
+        const nuevos = (form.pagos_extra || []).filter((_, i) => i !== index)
+        set('pagos_extra', nuevos)
+    }
+
+    const updatePagoExtra = (index: number, field: keyof PagoExtra, value: any) => {
+        const nuevos = [...(form.pagos_extra || [])]
+        nuevos[index] = { ...nuevos[index], [field]: value }
+        set('pagos_extra', nuevos)
     }
 
     const handleSave = async () => {
@@ -180,9 +208,9 @@ export default function FinanzaFormModal({ open, onClose, onSave, initial }: Pro
                 </div>
             </div>
 
-            {/* Cantidad bruta */}
+            {/* Cantidad bruta base */}
             <div className="form-group">
-                <label className="form-label">Cantidad bruta *</label>
+                <label className="form-label">Cantidad Bruta (Base) *</label>
                 <div style={{ position: 'relative' }}>
                     <span style={{
                         position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)',
@@ -199,6 +227,50 @@ export default function FinanzaFormModal({ open, onClose, onSave, initial }: Pro
                         step="0.01"
                     />
                 </div>
+            </div>
+
+            {/* Pagos Extra */}
+            <div style={{ marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label className="form-label" style={{ marginBottom: 0 }}>Pagos Extra (Transporte, Dietas, etc.)</label>
+                    <button className="btn btn-ghost btn-sm" onClick={addPagoExtra} style={{ height: '24px', padding: '0 8px', fontSize: '11px', color: 'var(--success)' }}>
+                        <Plus size={12} /> Añadir Pago Extra
+                    </button>
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {(form.pagos_extra || []).map((pago, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', animation: 'fadeIn 0.2s' }}>
+                            <div style={{ flex: 3 }}>
+                                <input
+                                    className="form-input form-input-sm"
+                                    value={pago.concepto}
+                                    onChange={e => updatePagoExtra(idx, 'concepto', e.target.value)}
+                                    placeholder="Concepto (ej: Kilometraje)"
+                                />
+                            </div>
+                            <div style={{ flex: 1.5, position: 'relative' }}>
+                                <span style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', fontSize: '11px', color: 'var(--text-secondary)' }}>€</span>
+                                <input
+                                    type="number"
+                                    className="form-input form-input-sm"
+                                    style={{ paddingLeft: '18px' }}
+                                    value={pago.cantidad || ''}
+                                    onChange={e => updatePagoExtra(idx, 'cantidad', parseFloat(e.target.value) || 0)}
+                                    placeholder="0.00"
+                                />
+                            </div>
+                            <button className="btn btn-icon btn-ghost" onClick={() => removePagoExtra(idx)} style={{ color: 'var(--danger)', marginTop: '4px' }}>
+                                <Trash2 size={14} />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+                {eco.totalExtras > 0 && (
+                    <div style={{ fontSize: '11px', color: 'var(--success)', marginTop: '6px', textAlign: 'right', fontWeight: 600 }}>
+                        + {fmt(eco.totalExtras)} en extras
+                    </div>
+                )}
             </div>
 
             {/* Descuentos en % */}
@@ -352,25 +424,37 @@ export default function FinanzaFormModal({ open, onClose, onSave, initial }: Pro
                     marginBottom: '16px',
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Bruto</span>
-                        <span style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{fmt(bruto)}</span>
+                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Base Bruta</span>
+                        <span style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{fmt(baseCantidad)}</span>
                     </div>
+                    {eco.totalExtras > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Total Extras</span>
+                            <span style={{ fontSize: '13px', color: 'var(--success)' }}>+ {fmt(eco.totalExtras)}</span>
+                        </div>
+                    )}
+                    {(eco.totalExtras > 0) && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '4px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: 600 }}>Bruto Total</span>
+                            <span style={{ fontSize: '13px', fontWeight: 600 }}>{fmt(eco.brutoTotal)}</span>
+                        </div>
+                    )}
                     {(form.comision_representante ?? 0) > 0 && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Comisión {form.comision_representante}%</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Comisión {form.comision_representante}% (sobre base)</span>
                             <span style={{ fontSize: '13px', color: 'var(--danger)' }}>− {fmt(eco.comisionImporte)}</span>
                         </div>
                     )}
                     {(form.impuestos_estimados ?? 0) > 0 && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>IRPF {form.impuestos_estimados}%</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>IRPF {form.impuestos_estimados}% (sobre total)</span>
                             <span style={{ fontSize: '13px', color: 'var(--danger)' }}>− {fmt(eco.impuestosImporte)}</span>
                         </div>
                     )}
                     {(form.otros_impuestos || []).map((imp, idx) => (
                         <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                             <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{imp.nombre || 'Deducción'} {imp.tipo === 'porcentaje' ? `(${imp.valor}%)` : ''}</span>
-                            <span style={{ fontSize: '13px', color: 'var(--danger)' }}>− {fmt(imp.tipo === 'porcentaje' ? bruto * (imp.valor / 100) : imp.valor)}</span>
+                            <span style={{ fontSize: '13px', color: 'var(--danger)' }}>− {fmt(imp.tipo === 'porcentaje' ? eco.brutoTotal * (imp.valor / 100) : imp.valor)}</span>
                         </div>
                     ))}
                     <div style={{

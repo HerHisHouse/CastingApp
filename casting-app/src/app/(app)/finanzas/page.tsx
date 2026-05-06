@@ -46,28 +46,42 @@ export default function FinanzasPage() {
         }), [data, search, estadoFilter])
 
     const totals = useMemo(() => {
-        const total = data.reduce((s, f) => s + f.cantidad, 0)
-        const cobrado = data.filter(f => f.estado_pago === 'pagado').reduce((s, f) => s + f.cantidad, 0)
-        const pendiente = data.filter(f => f.estado_pago !== 'pagado').reduce((s, f) => s + f.cantidad, 0)
+        const total = data.reduce((s, f) => {
+            const extras = (f.pagos_extra || []).reduce((sum, p) => sum + (p.cantidad || 0), 0)
+            return s + f.cantidad + extras
+        }, 0)
+        
+        const cobrado = data.filter(f => f.estado_pago === 'pagado').reduce((s, f) => {
+            const extras = (f.pagos_extra || []).reduce((sum, p) => sum + (p.cantidad || 0), 0)
+            return s + f.cantidad + extras
+        }, 0)
+        
+        const pendiente = data.filter(f => f.estado_pago !== 'pagado').reduce((s, f) => {
+            const extras = (f.pagos_extra || []).reduce((sum, p) => sum + (p.cantidad || 0), 0)
+            return s + f.cantidad + extras
+        }, 0)
         
         const netoCobrado = data.filter(f => f.estado_pago === 'pagado').reduce((s, f) => {
             if (f.importe_neto != null) return s + f.importe_neto
             
-            const bruto = f.cantidad
-            const comisionImporte = bruto * ((f.comision_representante || 0) / 100)
-            const impuestosImporte = bruto * ((f.impuestos_estimados || 0) / 100)
+            const base = f.cantidad
+            const extras = (f.pagos_extra || []).reduce((sum, p) => sum + (p.cantidad || 0), 0)
+            const brutoTotal = base + extras
+            
+            const comisionImporte = base * ((f.comision_representante || 0) / 100)
+            const impuestosImporte = brutoTotal * ((f.impuestos_estimados || 0) / 100)
             
             let otrosImporte = 0
             if (f.otros_impuestos) {
                 f.otros_impuestos.forEach(imp => {
                     if (imp.tipo === 'porcentaje') {
-                        otrosImporte += bruto * (imp.valor / 100)
+                        otrosImporte += brutoTotal * (imp.valor / 100)
                     } else {
                         otrosImporte += (imp.valor || 0)
                     }
                 })
             }
-            return s + bruto - comisionImporte - impuestosImporte - otrosImporte
+            return s + brutoTotal - comisionImporte - impuestosImporte - otrosImporte
         }, 0)
         
         return { total, cobrado, pendiente, netoCobrado }
@@ -99,23 +113,25 @@ function FinanzaMobileCard({
     onDelete: (id: string) => void 
 }) {
     const [showMore, setShowMore] = useState(false)
+        const base = finanza.cantidad
+    const totalExtras = (finanza.pagos_extra || []).reduce((sum, p) => sum + (p.cantidad || 0), 0)
+    const brutoTotal = base + totalExtras
     
-    const bruto = finanza.cantidad
-    const comisionImporte = bruto * ((finanza.comision_representante || 0) / 100)
-    const impuestosImporte = bruto * ((finanza.impuestos_estimados || 0) / 100)
+    const comisionImporte = base * ((finanza.comision_representante || 0) / 100)
+    const impuestosImporte = brutoTotal * ((finanza.impuestos_estimados || 0) / 100)
     
     let otrosImporte = 0
     if (finanza.otros_impuestos) {
         finanza.otros_impuestos.forEach(imp => {
             if (imp.tipo === 'porcentaje') {
-                otrosImporte += bruto * (imp.valor / 100)
+                otrosImporte += brutoTotal * (imp.valor / 100)
             } else {
                 otrosImporte += (imp.valor || 0)
             }
         })
     }
     
-    const netoCalculado = bruto - comisionImporte - impuestosImporte - otrosImporte
+    const netoCalculado = brutoTotal - comisionImporte - impuestosImporte - otrosImporte
     const neto = finanza.importe_neto != null ? finanza.importe_neto : netoCalculado
 
     return (
@@ -133,7 +149,12 @@ function FinanzaMobileCard({
 
             <div style={{ marginBottom: '12px' }}>
                 <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary)' }}>{finanza.proyecto_nombre}</div>
-                <div style={{ fontWeight: 700, fontSize: '18px', color: 'var(--success)', marginTop: '4px' }}>{formatCurrency(finanza.cantidad)}</div>
+                <div style={{ fontWeight: 700, fontSize: '18px', color: 'var(--success)', marginTop: '4px' }}>{formatCurrency(brutoTotal)}</div>
+                {totalExtras > 0 && (
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        Base: {formatCurrency(base)} + Extras: {formatCurrency(totalExtras)}
+                    </div>
+                )}
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
@@ -160,6 +181,17 @@ function FinanzaMobileCard({
 
             {showMore && (
                 <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', animation: 'fadeIn 0.2s' }}>
+                    {totalExtras > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '4px' }}>
+                            <span style={{ color: 'var(--text-secondary)', fontSize: '11px', fontWeight: 600 }}>PAGOS EXTRA:</span>
+                            {(finanza.pagos_extra || []).map((p, i) => (
+                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: 'var(--text-secondary)' }}>{p.concepto}:</span>
+                                    <span style={{ color: 'var(--success)' }}>+{formatCurrency(p.cantidad)}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: 'var(--text-secondary)' }}>Comisión:</span>
                         <span style={{ color: 'var(--danger)' }}>{finanza.comision_representante ? `${finanza.comision_representante}% (${formatCurrency(comisionImporte)})` : '—'}</span>
@@ -172,7 +204,7 @@ function FinanzaMobileCard({
                         <div key={i} style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <span style={{ color: 'var(--text-secondary)' }}>{imp.nombre || 'Deducción'}:</span>
                             <span style={{ color: 'var(--danger)' }}>
-                                −{formatCurrency(imp.tipo === 'porcentaje' ? bruto * (imp.valor / 100) : imp.valor)}
+                                −{formatCurrency(imp.tipo === 'porcentaje' ? brutoTotal * (imp.valor / 100) : imp.valor)}
                             </span>
                         </div>
                     ))}
@@ -180,6 +212,7 @@ function FinanzaMobileCard({
                         <span style={{ color: 'var(--text-secondary)' }}>Neto{finanza.importe_neto != null ? ' (Manual)' : ''}:</span>
                         <span style={{ color: 'var(--text-primary)' }}>{formatCurrency(neto)}</span>
                     </div>
+       </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: 'var(--text-secondary)' }}>Fecha pago:</span>
                         <span style={{ color: 'var(--text-primary)' }}>{formatDate(finanza.fecha_pago) || '—'}</span>
@@ -206,12 +239,15 @@ function FinanzaMobileCard({
 
 
     const calcNeto = (f: Finanza) => {
-        const bruto = f.cantidad
-        const comisionImporte = bruto * ((f.comision_representante || 0) / 100)
-        const impuestosImporte = bruto * ((f.impuestos_estimados || 0) / 100)
+        if (f.importe_neto != null) return f.importe_neto
+        const base = f.cantidad
+        const extras = (f.pagos_extra || []).reduce((sum, p) => sum + (p.cantidad || 0), 0)
+        const brutoTotal = base + extras
+        const comisionImporte = base * ((f.comision_representante || 0) / 100)
+        const impuestosImporte = brutoTotal * ((f.impuestos_estimados || 0) / 100)
         let otrosImporte = 0
-        if (f.otros_impuestos) f.otros_impuestos.forEach(imp => { otrosImporte += imp.tipo === 'porcentaje' ? bruto * (imp.valor / 100) : (imp.valor || 0) })
-        return f.importe_neto != null ? f.importe_neto : bruto - comisionImporte - impuestosImporte - otrosImporte
+        if (f.otros_impuestos) f.otros_impuestos.forEach(imp => { otrosImporte += imp.tipo === 'porcentaje' ? brutoTotal * (imp.valor / 100) : (imp.valor || 0) })
+        return brutoTotal - comisionImporte - impuestosImporte - otrosImporte
     }
 
     const exportCSV = () => {
@@ -427,7 +463,14 @@ function FinanzaMobileCard({
                                                 <tr key={f.id}>
                                                     <td><div style={{ fontWeight: 600 }}>{f.proyecto_nombre}</div></td>
                                                     <td><BadgeTipoIngreso tipo={f.tipo_ingreso} /></td>
-                                                    <td style={{ fontWeight: 600, color: 'var(--success)' }}>{formatCurrency(f.cantidad)}</td>
+                                                    <td style={{ fontWeight: 600, color: 'var(--success)' }}>
+                                                        {formatCurrency(f.cantidad + (f.pagos_extra || []).reduce((sum, p) => sum + (p.cantidad || 0), 0))}
+                                                        {(f.pagos_extra || []).length > 0 && (
+                                                            <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', fontWeight: 400 }}>
+                                                                Base: {formatCurrency(f.cantidad)} + {formatCurrency((f.pagos_extra || []).reduce((sum, p) => sum + (p.cantidad || 0), 0))} extras
+                                                            </span>
+                                                        )}
+                                                    </td>
                                                     <td style={{ color: 'var(--danger)' }}>{f.comision_representante ? `${f.comision_representante.toString().replace('.', ',')}%` : '—'}</td>
                                                     <td style={{ color: 'var(--warning)' }}>{f.impuestos_estimados ? `${f.impuestos_estimados.toString().replace('.', ',')}%` : '—'}</td>
                                                     <td style={{ fontWeight: 600 }}>

@@ -176,6 +176,11 @@ export interface OtroImpuesto {
   valor: number
 }
 
+export interface PagoExtra {
+  concepto: string
+  cantidad: number
+}
+
 export interface Finanza {
   id: string
   created_at: string
@@ -193,6 +198,7 @@ export interface Finanza {
   impuestos_estimados: number | null
   notas: string | null
   fecha_limite_cobro: string | null       // fecha máxima de reclamación (90 días)
+  pagos_extra?: PagoExtra[] | null        // Pagos extra (dietas, transporte, etc.)
 }
 
 export interface Contacto {
