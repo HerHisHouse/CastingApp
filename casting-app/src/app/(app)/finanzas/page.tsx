@@ -212,7 +212,6 @@ function FinanzaMobileCard({
                         <span style={{ color: 'var(--text-secondary)' }}>Neto{finanza.importe_neto != null ? ' (Manual)' : ''}:</span>
                         <span style={{ color: 'var(--text-primary)' }}>{formatCurrency(neto)}</span>
                     </div>
-       </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: 'var(--text-secondary)' }}>Fecha pago:</span>
                         <span style={{ color: 'var(--text-primary)' }}>{formatDate(finanza.fecha_pago) || '—'}</span>
