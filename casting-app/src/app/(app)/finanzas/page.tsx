@@ -440,23 +440,7 @@ function FinanzaMobileCard({
                                     </thead>
                                     <tbody>
                                         {filtered.map(f => {
-                                            const bruto = f.cantidad
-                                            const comisionImporte = bruto * ((f.comision_representante || 0) / 100)
-                                            const impuestosImporte = bruto * ((f.impuestos_estimados || 0) / 100)
-                                            
-                                            let otrosImporte = 0
-                                            if (f.otros_impuestos) {
-                                                f.otros_impuestos.forEach(imp => {
-                                                    if (imp.tipo === 'porcentaje') {
-                                                        otrosImporte += bruto * (imp.valor / 100)
-                                                    } else {
-                                                        otrosImporte += (imp.valor || 0)
-                                                    }
-                                                })
-                                            }
-                                            
-                                            const netoCalculado = bruto - comisionImporte - impuestosImporte - otrosImporte
-                                            const neto = f.importe_neto != null ? f.importe_neto : netoCalculado
+                                            const neto = calcNeto(f)
                                             
                                             return (
                                                 <tr key={f.id}>

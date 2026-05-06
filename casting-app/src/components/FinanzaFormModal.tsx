@@ -297,7 +297,7 @@ export default function FinanzaFormModal({ open, onClose, onSave, initial }: Pro
                             color: 'var(--text-secondary)', fontSize: '13px', pointerEvents: 'none',
                         }}>%</span>
                     </div>
-                    {(form.comision_representante ?? 0) > 0 && bruto > 0 && (
+                    {(form.comision_representante ?? 0) > 0 && baseCantidad > 0 && (
                         <div style={{ fontSize: '11px', color: 'var(--danger)', marginTop: '3px' }}>
                             − {fmt(eco.comisionImporte)}
                         </div>
@@ -326,7 +326,7 @@ export default function FinanzaFormModal({ open, onClose, onSave, initial }: Pro
                             color: 'var(--text-secondary)', fontSize: '13px', pointerEvents: 'none',
                         }}>%</span>
                     </div>
-                    {(form.impuestos_estimados ?? 0) > 0 && bruto > 0 && (
+                    {(form.impuestos_estimados ?? 0) > 0 && baseCantidad > 0 && (
                         <div style={{ fontSize: '11px', color: 'var(--danger)', marginTop: '3px' }}>
                             − {fmt(eco.impuestosImporte)}
                         </div>
