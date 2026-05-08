@@ -18,9 +18,11 @@ export default function OnboardingPage() {
 
     // Form states
     const [artisticName, setArtisticName] = useState('')
-    const [artistType, setArtistType] = useState('actor')
+    const [artistTypes, setArtistTypes] = useState<string[]>(['Actor'])
     const [defaultAgency, setDefaultAgency] = useState('')
     const [defaultCommission, setDefaultCommission] = useState('')
+    const [showCustomArtistInput, setShowCustomArtistInput] = useState(false)
+    const [customArtistInput, setCustomArtistInput] = useState('')
 
     // Modals
     const [castingModalOpen, setCastingModalOpen] = useState(false)
@@ -36,13 +38,15 @@ export default function OnboardingPage() {
             } else if (userProfile.onboarding_step > 1) {
                 setStep(userProfile.onboarding_step)
                 setArtisticName(userProfile.artistic_name || '')
-                setArtistType(userProfile.artist_type || 'actor')
+                if (userProfile.artist_types && userProfile.artist_types.length > 0) {
+                    setArtistTypes(userProfile.artist_types)
+                }
                 setDefaultAgency(userProfile.default_agency || '')
                 setDefaultCommission(userProfile.default_commission_percentage?.toString() || '')
             }
         }
         setLoading(false)
-    }, [userProfile, router])
+    }, [userProfile, router, loading])
 
     const saveStep = async (nextStep: number, isComplete: boolean = false) => {
         console.log(`Guardando paso: ${nextStep}, Completado: ${isComplete}`);
@@ -55,7 +59,7 @@ export default function OnboardingPage() {
 
         if (step === 2) {
             updates.artistic_name = artisticName
-            updates.artist_type = artistType
+            updates.artist_types = artistTypes
             updates.default_agency = defaultAgency
             updates.default_commission_percentage = defaultCommission ? parseFloat(defaultCommission) : null
         }
@@ -92,6 +96,32 @@ export default function OnboardingPage() {
         await createProyecto(form)
         setProyectoModalOpen(false)
         await saveStep(6, true)
+    }
+
+    const PREDEFINED_TYPES = ['Actor', 'Actriz', 'Bailarín/a', 'Coreógrafo/a', 'Actor/Actriz de doblaje', 'Modelo', 'Intérprete musical']
+
+    const toggleArtistType = (type: string) => {
+        if (artistTypes.includes(type)) {
+            setArtistTypes(artistTypes.filter(t => t !== type))
+        } else {
+            setArtistTypes([...artistTypes, type])
+        }
+    }
+
+    const handleCustomTypeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault()
+            addCustomTypes()
+        }
+    }
+
+    const addCustomTypes = () => {
+        if (!customArtistInput.trim()) return
+        const newTypes = customArtistInput.split(',').map(t => t.trim()).filter(t => t !== '' && !artistTypes.includes(t))
+        if (newTypes.length > 0) {
+            setArtistTypes([...artistTypes, ...newTypes])
+        }
+        setCustomArtistInput('')
     }
 
     if (loading) return null
@@ -198,16 +228,100 @@ export default function OnboardingPage() {
 
                         <div className="form-group">
                             <label className="form-label">¿Qué haces? *</label>
-                            <select className="form-select" value={artistType} onChange={e => setArtistType(e.target.value)}>
-                                <option value="actor">Actor</option>
-                                <option value="actriz">Actriz</option>
-                                <option value="bailarin">Bailarín/a</option>
-                                <option value="coreografo">Coreógrafo/a</option>
-                                <option value="doblaje">Actor/Actriz de doblaje</option>
-                                <option value="modelo">Modelo</option>
-                                <option value="musico">Intérprete musical</option>
-                                <option value="otro">Otro</option>
-                            </select>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                {PREDEFINED_TYPES.map(type => {
+                                    const selected = artistTypes.includes(type)
+                                    return (
+                                        <button 
+                                            key={type} 
+                                            type="button" 
+                                            onClick={() => toggleArtistType(type)}
+                                            style={{
+                                                padding: '6px 12px',
+                                                borderRadius: '20px',
+                                                border: `1px solid ${selected ? '#7c6af7' : 'var(--border)'}`,
+                                                background: selected ? '#7c6af7' : 'transparent',
+                                                color: selected ? 'white' : 'var(--text-secondary)',
+                                                cursor: 'pointer',
+                                                fontSize: '13px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '6px',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            {selected ? <Check size={12} /> : null}
+                                            {type}
+                                        </button>
+                                    )
+                                })}
+
+                                {/* Custom types that were added but are not in PREDEFINED */}
+                                {artistTypes.filter(t => !PREDEFINED_TYPES.includes(t)).map(type => (
+                                    <button 
+                                        key={type} 
+                                        type="button" 
+                                        onClick={() => toggleArtistType(type)}
+                                        style={{
+                                            padding: '6px 12px',
+                                            borderRadius: '20px',
+                                            border: '1px solid #7c6af7',
+                                            background: '#7c6af7',
+                                            color: 'white',
+                                            cursor: 'pointer',
+                                            fontSize: '13px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        <Check size={12} /> {type} <span style={{ fontSize: '10px', marginLeft: '4px', opacity: 0.8 }}>×</span>
+                                    </button>
+                                ))}
+
+                                <button 
+                                    type="button" 
+                                    onClick={() => setShowCustomArtistInput(!showCustomArtistInput)}
+                                    style={{
+                                        padding: '6px 12px',
+                                        borderRadius: '20px',
+                                        border: `1px dashed ${showCustomArtistInput ? '#7c6af7' : 'var(--border)'}`,
+                                        background: showCustomArtistInput ? 'rgba(124,106,247,0.1)' : 'transparent',
+                                        color: showCustomArtistInput ? '#7c6af7' : 'var(--text-secondary)',
+                                        cursor: 'pointer',
+                                        fontSize: '13px',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    Otro
+                                </button>
+                            </div>
+
+                            {showCustomArtistInput && (
+                                <div style={{ marginTop: '12px', animation: 'fadeIn 0.2s ease' }}>
+                                    <input 
+                                        type="text" 
+                                        className="form-input" 
+                                        placeholder="Ej: Cantante, Mago, Comediante... (pulsa Enter para añadir)" 
+                                        value={customArtistInput} 
+                                        onChange={e => setCustomArtistInput(e.target.value)}
+                                        onKeyDown={handleCustomTypeKeyDown}
+                                        onBlur={addCustomTypes}
+                                    />
+                                </div>
+                            )}
+                            
+                            {artistTypes.length === 0 && (
+                                <span style={{ fontSize: '11px', color: 'var(--danger)', marginTop: '8px', display: 'block' }}>
+                                    Debes seleccionar al menos una profesión
+                                </span>
+                            )}
+                            {(showCustomArtistInput && customArtistInput.trim() !== '') && (
+                                <span style={{ fontSize: '11px', color: 'var(--warning)', marginTop: '4px', display: 'block' }}>
+                                    Pulsa Enter para añadir la profesión que has escrito
+                                </span>
+                            )}
                         </div>
 
                         <div className="form-group">
@@ -230,7 +344,7 @@ export default function OnboardingPage() {
                         <button className="btn btn-secondary" onClick={() => saveStep(1)}>
                             <ChevronLeft size={16} /> Atrás
                         </button>
-                        <button className="btn btn-primary" disabled={!artisticName} onClick={() => saveStep(3)}>
+                        <button className="btn btn-primary" disabled={!artisticName || artistTypes.length === 0} onClick={() => saveStep(3)}>
                             Siguiente <ChevronRight size={16} />
                         </button>
                     </div>

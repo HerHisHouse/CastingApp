@@ -47,7 +47,7 @@ export interface UserProfile {
   has_completed_onboarding: boolean
   onboarding_step: number
   artistic_name: string | null
-  artist_type: string | null
+  artist_types: string[] | null
   default_agency: string | null
   default_commission_percentage: number | null
   created_at: string
