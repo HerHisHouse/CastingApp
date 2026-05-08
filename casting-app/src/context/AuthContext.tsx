@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 console.log(`Usuario autenticado: ${currentUser.id}`)
                 
                 if (hasVerifiedProfile && userProfile?.id === currentUser.id) {
-                    console.log(`Perfil ya verificado en esta sesión: completado=${userProfile.has_completed_onboarding}`)
+                    console.log(`Perfil ya verificado en esta sesión: completado=${userProfile?.has_completed_onboarding}`)
                 } else {
                     console.log("Consultando user_profiles...")
                     const profilePromise = supabase.from('user_profiles').select('*').eq('id', currentUser.id).single()
