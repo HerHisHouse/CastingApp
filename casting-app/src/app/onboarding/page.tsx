@@ -49,8 +49,14 @@ export default function OnboardingPage() {
     }, [userProfile, router, loading])
 
     const saveStep = async (nextStep: number, isComplete: boolean = false) => {
+        if (isComplete) console.log("=== PASO 5: Comenzar pulsado ===");
         console.log(`Guardando paso: ${nextStep}, Completado: ${isComplete}`);
-        if (!user) return
+        console.log("User ID:", user?.id);
+        
+        if (!user) {
+            console.error("ERROR: No hay usuario autenticado en saveStep");
+            return;
+        }
         
         const updates: any = {
             onboarding_step: nextStep,
@@ -64,20 +70,31 @@ export default function OnboardingPage() {
             updates.default_commission_percentage = defaultCommission ? parseFloat(defaultCommission) : null
         }
 
-        // Optimistic local update to prevent hanging
+        // Optimistic local update to prevent hanging for intermediate steps
         if (!isComplete) {
             setStep(nextStep);
             window.scrollTo(0, 0);
         }
 
         try {
-            await supabase.from('user_profiles').update(updates).eq('id', user.id)
+            if (isComplete) console.log("Actualizando has_completed_onboarding a true...");
+            const { data, error } = await supabase.from('user_profiles').update(updates).eq('id', user.id).select()
+            console.log("Resultado de UPDATE:", { data, error });
+
+            if (error) {
+                console.error("ERROR AL GUARDAR EN SUPABASE:", error);
+                alert(`Error al guardar: ${error.message}`);
+                return;
+            }
+
             if (isComplete) {
+                console.log("Onboarding marcado como completado. Refrescando perfil...");
                 await refresh()
+                console.log("Perfil refrescado. Redirigiendo a Dashboard...");
                 router.replace('/')
             }
         } catch (error) {
-            console.error("Error al guardar en Supabase:", error)
+            console.error("Excepción en saveStep:", error)
         }
     }
 
