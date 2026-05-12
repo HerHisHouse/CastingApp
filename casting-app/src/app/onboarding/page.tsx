@@ -78,7 +78,7 @@ export default function OnboardingPage() {
 
         try {
             if (isComplete) console.log("Actualizando has_completed_onboarding a true...");
-            const { data, error } = await supabase.from('user_profiles').update(updates).eq('id', user.id).select()
+            const { data, error } = await supabase.from('user_profiles').update(updates).eq('id', user.id).select().single()
             console.log("Resultado de UPDATE:", { data, error });
 
             if (error) {
@@ -88,7 +88,13 @@ export default function OnboardingPage() {
             }
 
             if (isComplete) {
-                console.log("Onboarding marcado como completado. Refrescando perfil...");
+                console.log("Onboarding marcado como completado. Actualizando caché local...");
+                // Actualizar caché para que AuthContext no vuelva a consultar Supabase
+                if (typeof window !== 'undefined') {
+                    sessionStorage.setItem('cache_onboarding_verified', JSON.stringify(data));
+                }
+                
+                console.log("Refrescando perfil global...");
                 await refresh()
                 console.log("Perfil refrescado. Redirigiendo a Dashboard...");
                 router.replace('/')
