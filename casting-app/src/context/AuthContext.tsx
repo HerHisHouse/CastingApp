@@ -1,9 +1,11 @@
 'use client'
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { UserProfile } from '@/lib/supabase'
 import { Loader2 } from 'lucide-react'
+
+const CACHE_KEY = 'cache_onboarding_verified'
 
 interface AuthContextValue {
     user: User | null
@@ -21,99 +23,139 @@ const AuthContext = createContext<AuthContextValue>({
     genero: 'actor', username: '', avatarUrl: null, refresh: async () => { },
 })
 
-const ONBOARDING_CACHE_KEY = 'cache_onboarding_verified';
+// ─── Helpers de caché ──────────────────────────────────────────────────────
+function getCachedProfile(userId: string): UserProfile | null {
+    try {
+        const raw = sessionStorage.getItem(CACHE_KEY)
+        if (!raw) return null
+        const parsed = JSON.parse(raw)
+        // Asegurarse de que la caché pertenece al mismo usuario
+        if (parsed?.id === userId) return parsed as UserProfile
+    } catch { /* ignore */ }
+    return null
+}
 
+function setCachedProfile(profile: UserProfile) {
+    try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(profile)) } catch { /* ignore */ }
+}
+
+function clearCachedProfile() {
+    try { sessionStorage.removeItem(CACHE_KEY) } catch { /* ignore */ }
+}
+
+// ─── Provider ─────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
     const [session, setSession] = useState<Session | null>(null)
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
     const [loading, setLoading] = useState(true)
-    const [hasVerifiedProfile, setHasVerifiedProfile] = useState(false)
 
-    const refresh = async () => {
-        console.log("Iniciando verificación de auth...")
-        setLoading(true)
+    // Flag de ref (no estado) para no re-disparar efectos
+    const hasLoadedProfile = useRef(false)
 
+    // ── Carga el perfil para un usuario dado ────────────────────────────
+    const loadProfile = async (currentUser: User) => {
+        // 1. Caché → rápido, sin red
+        const cached = getCachedProfile(currentUser.id)
+        if (cached) {
+            console.log('✅ Perfil desde caché:', cached.has_completed_onboarding)
+            setUserProfile(cached)
+            return
+        }
+
+        // 2. Sin caché → consultar Supabase una sola vez
+        console.log('🔍 Consultando Supabase user_profiles...')
         try {
+            const { data: profile } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .eq('id', currentUser.id)
+                .single()
+
+            if (profile) {
+                console.log('✅ Perfil cargado:', profile.has_completed_onboarding)
+                setUserProfile(profile)
+                setCachedProfile(profile)
+            } else {
+                // Primera vez: crear fila
+                console.log('🆕 Creando perfil por primera vez...')
+                const { data: newProfile } = await supabase
+                    .from('user_profiles')
+                    .insert({ id: currentUser.id })
+                    .select()
+                    .single()
+                const final = (newProfile ?? { id: currentUser.id, has_completed_onboarding: false, onboarding_step: 1 }) as UserProfile
+                setUserProfile(final)
+                setCachedProfile(final)
+            }
+        } catch (err) {
+            console.error('❌ Error cargando perfil, usando fallback:', err)
+            const fallback = { id: currentUser.id, has_completed_onboarding: false, onboarding_step: 1 } as UserProfile
+            setUserProfile(fallback)
+            // No cacheamos el fallback para que el próximo mount reintente
+        }
+    }
+
+    // ── refresh() solo renueva metadatos de usuario y el perfil si cambió ─
+    const refresh = async () => {
+        if (!user) return
+        console.log('🔄 refresh() llamado')
+        // Invalidar caché para forzar recarga de Supabase
+        clearCachedProfile()
+        hasLoadedProfile.current = false
+        await loadProfile(user)
+    }
+
+    // ── Inicialización: SE EJECUTA UNA SOLA VEZ en toda la sesión ─────────
+    useEffect(() => {
+        let mounted = true
+
+        const init = async () => {
+            console.log('🚀 AuthContext init')
             const { data: { session: s } } = await supabase.auth.getSession()
+            if (!mounted) return
+
             setSession(s)
             const currentUser = s?.user ?? null
             setUser(currentUser)
 
-            if (currentUser) {
-                console.log(`Usuario autenticado: ${currentUser.id}`)
-                
-                // 1. Verificar caché
-                const cached = typeof window !== 'undefined' ? sessionStorage.getItem(ONBOARDING_CACHE_KEY) : null;
-                if (cached) {
-                    const cachedProfile = JSON.parse(cached);
-                    if (cachedProfile && cachedProfile.id === currentUser.id) {
-                        console.log("Usando estado de onboarding cacheado:", cachedProfile);
-                        setUserProfile(cachedProfile);
-                        setHasVerifiedProfile(true);
-                        setLoading(false);
-                        return;
-                    }
-                }
+            if (currentUser && !hasLoadedProfile.current) {
+                hasLoadedProfile.current = true
+                await loadProfile(currentUser)
+            }
 
-                console.log("Sin caché válida, consultando Supabase...");
-                const { data: profile, error } = await supabase
-                    .from('user_profiles')
-                    .select('*')
-                    .eq('id', currentUser.id)
-                    .single()
-                
-                if (profile) {
-                    console.log(`Perfil encontrado: has_completed_onboarding=${profile.has_completed_onboarding}`)
-                    setUserProfile(profile)
-                    sessionStorage.setItem(ONBOARDING_CACHE_KEY, JSON.stringify(profile))
-                } else {
-                    console.log("Perfil no encontrado, creando uno por defecto...")
-                    const { data: newProfile } = await supabase
-                        .from('user_profiles')
-                        .insert({ id: currentUser.id })
-                        .select()
-                        .single()
-                        
-                    const finalProfile = newProfile || { id: currentUser.id, has_completed_onboarding: false, onboarding_step: 1 } as UserProfile;
-                    setUserProfile(finalProfile)
-                    sessionStorage.setItem(ONBOARDING_CACHE_KEY, JSON.stringify(finalProfile))
-                }
-                setHasVerifiedProfile(true)
-            } else {
-                setUserProfile(null)
-                setHasVerifiedProfile(false)
-                if (typeof window !== 'undefined') sessionStorage.removeItem(ONBOARDING_CACHE_KEY)
-            }
-        } catch (err) {
-            console.error("Error en AuthContext:", err)
-            // Fallback: permitir que la app cargue si falla la red
-            if (user) {
-                const fallback = { id: user.id, has_completed_onboarding: false, onboarding_step: 1 } as UserProfile;
-                setUserProfile(fallback);
-            }
-        } finally {
-            setLoading(false)
+            if (mounted) setLoading(false)
         }
-    }
 
-    useEffect(() => {
-        refresh()
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_e, s) => {
-            if (_e === 'SIGNED_OUT') {
+        init()
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
+            console.log('🔔 Auth event:', event)
+            if (event === 'SIGNED_OUT') {
                 setSession(null)
                 setUser(null)
                 setUserProfile(null)
-                setHasVerifiedProfile(false)
-                if (typeof window !== 'undefined') sessionStorage.removeItem(ONBOARDING_CACHE_KEY)
+                hasLoadedProfile.current = false
+                clearCachedProfile()
                 setLoading(false)
-            } else if (_e === 'SIGNED_IN' || _e === 'TOKEN_REFRESHED') {
-                if (!hasVerifiedProfile) {
-                    await refresh()
+            } else if (event === 'SIGNED_IN') {
+                // Solo cargar si es un nuevo usuario (no un TOKEN_REFRESHED disfrazado)
+                const currentUser = s?.user ?? null
+                if (currentUser && !hasLoadedProfile.current) {
+                    setSession(s)
+                    setUser(currentUser)
+                    hasLoadedProfile.current = true
+                    await loadProfile(currentUser)
+                    setLoading(false)
                 }
             }
+            // TOKEN_REFRESHED: NO hacemos nada, el caché sigue siendo válido
         })
-        return () => subscription.unsubscribe()
+
+        return () => {
+            mounted = false
+            subscription.unsubscribe()
+        }
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
     const meta = user?.user_metadata ?? {}

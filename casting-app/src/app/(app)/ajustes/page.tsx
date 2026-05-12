@@ -1,9 +1,9 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { updateUserMeta, signOut, uploadAvatar } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
-import { Camera, LogOut, Settings, Loader2, Check, Bell } from 'lucide-react'
+import { Camera, LogOut, Settings, Loader2, Check, Bell, RefreshCw } from 'lucide-react'
 import NotificacionesSettings from '@/components/NotificacionesSettings'
 
 export default function AjustesPage() {
@@ -25,6 +25,71 @@ export default function AjustesPage() {
 
     const showSaved = () => { setSaved(true); setTimeout(() => setSaved(false), 2500) }
     const showSavedPerfil = () => { setSavedPerfil(true); setTimeout(() => setSavedPerfil(false), 2500) }
+
+    // ── Notificaciones push: estado de diagnóstico ─────────────────────
+    const [pushDiag, setPushDiag] = useState<string | null>(null)
+    const [repairingPush, setRepairingPush] = useState(false)
+
+    // Re-registrar service worker en cada mount para reparar suscripciones rotas
+    useEffect(() => {
+        if (!('serviceWorker' in navigator)) return
+        navigator.serviceWorker.getRegistrations().then(regs => {
+            if (regs.length === 0) {
+                navigator.serviceWorker.register('/sw.js?v=4').then(
+                    () => console.log('✅ SW registrado desde ajustes'),
+                    err => console.error('❌ SW error:', err)
+                )
+            }
+        })
+    }, [])
+
+    const handleCheckNotifications = async () => {
+        setPushDiag(null)
+        const perm = typeof Notification !== 'undefined' ? Notification.permission : 'not-supported'
+        const hasSW = 'serviceWorker' in navigator
+        const hasPush = 'PushManager' in window
+
+        if (!hasSW || !hasPush) {
+            setPushDiag('⚠️ Este dispositivo/navegador no soporta notificaciones push.')
+            return
+        }
+
+        if (perm === 'denied') {
+            setPushDiag('🚫 Las notificaciones están bloqueadas. Ve a la configuración de tu navegador y actívalas para Caché.')
+            return
+        }
+
+        if (perm === 'default') {
+            const granted = await Notification.requestPermission()
+            setPushDiag(granted === 'granted' ? '✅ Permiso concedido. Activa las notificaciones desde el botón de la sección Notificaciones.' : '🚫 Permiso denegado.')
+            return
+        }
+
+        // perm === 'granted' → comprobar suscripción
+        try {
+            const reg = await navigator.serviceWorker.ready
+            const sub = await reg.pushManager.getSubscription()
+            setPushDiag(sub ? `✅ Suscripción activa. Endpoint: ...${sub.endpoint.slice(-20)}` : '⚠️ Permiso concedido pero sin suscripción activa. Actívalas desde la sección Notificaciones.')
+        } catch (e: any) {
+            setPushDiag(`❌ Error comprobando suscripción: ${e.message}`)
+        }
+    }
+
+    const handleRepairPush = async () => {
+        setRepairingPush(true)
+        setPushDiag(null)
+        try {
+            const regs = await navigator.serviceWorker.getRegistrations()
+            await Promise.all(regs.map(r => r.unregister()))
+            const reg = await navigator.serviceWorker.register('/sw.js?v=4')
+            await navigator.serviceWorker.ready
+            setPushDiag('✅ Service worker re-registrado. Ahora activa las notificaciones desde la sección Notificaciones.')
+        } catch (e: any) {
+            setPushDiag(`❌ Error al re-registrar SW: ${e.message}`)
+        } finally {
+            setRepairingPush(false)
+        }
+    }
 
     const handleSaveAccount = async () => {
         if (!user) return
@@ -203,6 +268,36 @@ export default function AjustesPage() {
                             Notificaciones
                         </div>
                         <NotificacionesSettings />
+
+                        {/* Diagnóstico push */}
+                        <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
+                            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+                                Si no recibes notificaciones en el móvil, usa estas herramientas:
+                            </p>
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                <button
+                                    type="button"
+                                    onClick={handleCheckNotifications}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--accent-dim)', border: '1px solid var(--accent)', color: 'var(--accent-light)', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600, fontSize: '12px' }}
+                                >
+                                    <Bell size={13} /> Verificar estado
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleRepairPush}
+                                    disabled={repairingPush}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600, fontSize: '12px' }}
+                                >
+                                    {repairingPush ? <Loader2 size={13} className="spin" /> : <RefreshCw size={13} />}
+                                    Reparar servicio
+                                </button>
+                            </div>
+                            {pushDiag && (
+                                <p style={{ marginTop: '10px', fontSize: '12px', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.04)', padding: '10px', borderRadius: '8px', lineHeight: 1.5 }}>
+                                    {pushDiag}
+                                </p>
+                            )}
+                        </div>
                     </div>
 
                     {/* ─── OTROS / PELIGRO ──────────────────────────────── */}

@@ -70,7 +70,7 @@ export default function OnboardingPage() {
             updates.default_commission_percentage = defaultCommission ? parseFloat(defaultCommission) : null
         }
 
-        // Optimistic local update to prevent hanging for intermediate steps
+        // Optimistic local update for intermediate steps
         if (!isComplete) {
             setStep(nextStep);
             window.scrollTo(0, 0);
@@ -87,17 +87,14 @@ export default function OnboardingPage() {
                 return;
             }
 
-            if (isComplete) {
-                console.log("Onboarding marcado como completado. Actualizando caché local...");
-                // Actualizar caché para que AuthContext no vuelva a consultar Supabase
-                if (typeof window !== 'undefined') {
+            if (isComplete && data) {
+                console.log("✅ Onboarding completado. Actualizando caché y redirigiendo...");
+                // Actualizar caché directamente SIN llamar refresh() para no re-cargar
+                try {
                     sessionStorage.setItem('cache_onboarding_verified', JSON.stringify(data));
-                }
-                
-                console.log("Refrescando perfil global...");
-                await refresh()
-                console.log("Perfil refrescado. Redirigiendo a Dashboard...");
-                router.replace('/')
+                } catch { /* ignore */ }
+                // Redirigir directamente al dashboard
+                router.replace('/');
             }
         } catch (error) {
             console.error("Excepción en saveStep:", error)
