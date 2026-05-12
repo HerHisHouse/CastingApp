@@ -414,9 +414,26 @@ function FinanzaMobileCard({
                     {loading ? <LoadingSkeleton rows={5} /> : filtered.length === 0 ? (
                         <EmptyState
                             icon={<DollarSign size={48} />}
-                            title="No hay ingresos registrados"
-                            description="Registra tus ingresos aquí para llevar un control de tus finanzas."
-                            action={<button className="btn btn-primary" onClick={openNew}><Plus size={14} />Nuevo Ingreso</button>}
+                            title={(() => {
+                                if (data.length === 0) return "No hay ingresos registrados"
+                                if (estadoFilter === 'pendiente') return "No hay cobros pendientes"
+                                if (estadoFilter === 'parcial') return "No hay pagos parciales"
+                                if (estadoFilter === 'pagado') return "No hay proyectos pagados"
+                                return "No se encontraron resultados"
+                            })()}
+                            description={data.length === 0 
+                                ? "Registra tus ingresos aquí para llevar un control de tus finanzas." 
+                                : "Actualmente no hay datos que coincidan con este filtro."
+                            }
+                            action={data.length === 0 ? (
+                                <button 
+                                    className="btn btn-primary" 
+                                    onClick={openNew}
+                                    style={{ padding: '8px 16px', fontSize: '13px', margin: '0 auto' }}
+                                >
+                                    <Plus size={16} /> <span>Nuevo Ingreso</span>
+                                </button>
+                            ) : undefined}
                         />
                     ) : (
                         <>

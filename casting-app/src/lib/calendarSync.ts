@@ -222,11 +222,13 @@ export async function syncCastingEvents(casting: Casting, userId: string) {
 export async function syncFinanceEvents(finanza: Finanza, userId: string) {
     if (!finanza.id) return
 
+    // Borrar eventos previos de esta finanza
     await supabase.from('calendar_events').delete()
         .eq('related_finance_id', finanza.id)
         .eq('is_manual', false)
 
-    if (finanza.fecha_limite_cobro) {
+    // Solo crear el evento si NO está pagado y tiene fecha límite
+    if (finanza.estado_pago !== 'pagado' && finanza.fecha_limite_cobro) {
         const labels: Record<string, string> = {
             nomina: 'Nómina', derechos_imagen: 'Derechos de Imagen',
             buyout: 'Buyout', royalties: 'Royalties', callback: 'Callback'
