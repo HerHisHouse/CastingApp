@@ -94,9 +94,27 @@ export default function ContactosPage() {
                 {loading ? <LoadingSkeleton rows={6} /> : filtered.length === 0 ? (
                     <EmptyState
                         icon={<Users size={48} />}
-                        title="No hay contactos"
-                        description="Construye tu red de profesionales: directores de casting, representantes, productores..."
-                        action={<button className="btn btn-primary" onClick={openNew}><Plus size={14} />Nuevo Contacto</button>}
+                        title={(() => {
+                            if (data.length === 0) return "No hay contactos"
+                            if (tipoFilter === 'director_casting') return "No hay directores de casting"
+                            if (tipoFilter === 'representante') return "No hay representantes"
+                            if (tipoFilter === 'productor') return "No hay productores"
+                            if (tipoFilter === 'director') return "No hay directores"
+                            return "No se encontraron contactos"
+                        })()}
+                        description={data.length === 0 
+                            ? "Construye tu red de profesionales: directores de casting, representantes, productores..." 
+                            : "Actualmente no hay contactos que coincidan con este filtro."
+                        }
+                        action={data.length === 0 ? (
+                            <button 
+                                className="btn btn-primary" 
+                                onClick={openNew}
+                                style={{ padding: '8px 16px', fontSize: '13px', margin: '0 auto' }}
+                            >
+                                <Plus size={16} /> <span>Nuevo Contacto</span>
+                            </button>
+                        ) : undefined}
                     />
                 ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>

@@ -210,9 +210,20 @@ export default function ProyectosPage() {
                 {loading ? <LoadingSkeleton rows={4} /> : filtered.length === 0 ? (
                     <EmptyState
                         icon={<Clapperboard size={48} />}
-                        title="No hay proyectos"
-                        description="Los proyectos se crean cuando ganas un casting, o puedes añadirlos manualmente."
-                        action={<button className="btn btn-primary" onClick={openNew}><Plus size={14} />Nuevo Proyecto</button>}
+                        title={data.length === 0 ? "No hay proyectos" : "No se encontraron proyectos"}
+                        description={data.length === 0 
+                            ? "Los proyectos se crean cuando ganas un casting, o puedes añadirlos manualmente." 
+                            : "Actualmente no hay datos que coincidan con tu búsqueda."
+                        }
+                        action={data.length === 0 ? (
+                            <button 
+                                className="btn btn-primary" 
+                                onClick={openNew}
+                                style={{ padding: '8px 16px', fontSize: '13px', margin: '0 auto' }}
+                            >
+                                <Plus size={16} /> <span>Nuevo Proyecto</span>
+                            </button>
+                        ) : undefined}
                     />
                 ) : (
                     <div>

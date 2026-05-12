@@ -498,7 +498,33 @@ export default function CastingsPage() {
 
                 <div className="card" style={{ padding: 0, background: 'transparent', border: 'none' }}>
                     {loading ? <LoadingSkeleton /> : filtered.length === 0 ? (
-                        <EmptyState icon={<Film size={48} />} title="No hay castings" description="Registra tu primer casting para empezar." action={<button className="btn btn-primary" onClick={openNew}><Plus size={14} />Nuevo Casting</button>} />
+                        <EmptyState 
+                            icon={<Film size={48} />} 
+                            title={(() => {
+                                if (data.length === 0) return "No hay castings"
+                                if (estadoFilter === 'pendiente') return "No hay castings recibidos"
+                                if (estadoFilter === 'no_aplicado') return "No hay castings no aplicados"
+                                if (estadoFilter === 'en_proceso') return "No hay castings en proceso"
+                                if (estadoFilter === 'opcionado') return "No hay castings opcionados"
+                                if (estadoFilter === 'callback') return "No hay castings con callback"
+                                if (estadoFilter === 'seleccionado') return "No hay castings seleccionados"
+                                if (estadoFilter === 'descartado') return "No hay castings descartados"
+                                return "No se encontraron resultados"
+                            })()}
+                            description={data.length === 0 
+                                ? "Registra tu primer casting para empezar." 
+                                : "Actualmente no hay datos que coincidan con este filtro."
+                            }
+                            action={data.length === 0 ? (
+                                <button 
+                                    className="btn btn-primary" 
+                                    onClick={openNew}
+                                    style={{ padding: '8px 16px', fontSize: '13px', margin: '0 auto' }}
+                                >
+                                    <Plus size={16} /> <span>Nuevo Casting</span>
+                                </button>
+                            ) : undefined} 
+                        />
                     ) : (
                         <>
                             {/* Desktop View */}
